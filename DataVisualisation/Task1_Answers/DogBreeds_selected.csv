@@ -1,0 +1,175 @@
+dog_breed;category;datadog_score;popularity_inUS_ranking;longevity;grooming_required;suitability_for_children;size_category;intelligence_category;lifetime_costs;average_purchase_price;price_category
+Border Collie;herding;3,64;39;12,52;2;3;medium;Brightest;17404;623;budget
+Border Terrier;terrier;3,61;61;14,00;2;1;small;Above average;19575;833;midprice
+Brittany;sporting;3,54;30;12,92;2;2;medium;Excellent;19503;618;budget
+Cairn Terrier;terrier;3,53;48;13,84;2;1;small;Above average;18965;435;budget
+Welsh Springer Spaniel;sporting;3,34;81;12,49;2;1;medium;Above average;17492;750;midprice
+English Cocker Spaniel;sporting;3,33;51;11,66;2;1;medium;Excellent;16442;800;midprice
+Cocker Spaniel;sporting;3,3;27;12,50;2;1;small;Excellent;19888;465;budget
+Papillon;toy;3,26;33;13,00;2;2;small;Brightest;18157;740;midprice
+Australian Cattle Dog;herding;3,25;49;11,67;2;3;medium;Brightest;17607;530;budget
+Shetland Sheepdog;herding;3,22;20;12,53;1;1;small;Brightest;17469;465;budget
+Siberian Husky;working;3,22;16;12,58;3;1;medium;Average;19043;650;budget
+Lhasa Apso;non-sporting;3,21;50;13,92;2;1;small;Fair;18985;350;budget
+Affenpinscher;toy;3,2;84;11,42;2;2;small;Above average;15835;510;budget
+Dachshund;hound;3,19;9;12,63;2;3;small;Average;17350;423;budget
+Miniature Schnauzer;terrier;3,19;12;11,81;2;2;small;Excellent;16753;715;midprice
+Chihuahua;toy;3,15;14;16,50;2;3;small;Fair;22640;588;budget
+Australian Terrier;terrier;3,11;77;11,05;2;2;small;Above average;15475;640;budget
+Whippet;hound;3,11;46;12,87;2;2;medium;Average;18160;915;midprice
+English Springer Spaniel;sporting;3,09;29;12,54;2;1;medium;Excellent;18950;615;budget
+West Highland White Terrier;terrier;3,08;32;12,80;2;1;small;Average;17690;538;budget
+Bedlington Terrier;terrier;3,07;83;13,51;2;2;small;Average;19151;1058;midprice
+Poodle;non-sporting;3,04;8;11,95;2;2;medium;Brightest;18382;900;midprice
+Bichon Frise;non-sporting;3,03;34;12,21;1;1;small;Average;17063;693;budget
+German Shorthaired Pointer;sporting;3,03;15;11,46;2;1;large;Excellent;20849;545;budget
+Pointer;sporting;3,03;74;12,42;2;1;large;Average;21049;294;budget
+Tibetan Spaniel;non-sporting;3,02;73;14,42;2;1;small;Average;22104;1050;midprice
+Labrador Retriever;sporting;2,97;1;12,04;2;1;medium;Brightest;18422;810;midprice
+Maltese;toy;2,93;23;12,25;1;3;small;Fair;16073;650;budget
+Pomeranian;toy;2,93;17;9,67;2;2;small;Excellent;13677;670;budget
+Shih Tzu;toy;2,93;11;13,20;1;1;small;Lowest;18264;583;budget
+Australian Shepherd;herding;2,91;24;12,28;2;2;medium;Average;18524;565;budget
+Yorkshire Terrier;toy;2,85;5;12,60;1;3;small;Above average;17944;1057;midprice
+Irish Setter;sporting;2,84;56;11,63;2;1;large;Above average;17544;525;budget
+Pharaoh Hound;hound;2,81;86;11,83;2;2;medium;Above average;18221;913;midprice
+Brussels Griffon;toy;2,8;59;12,00;2;3;small;Fair;16925;833;midprice
+Golden Retriever;sporting;2,8;4;12,04;2;1;medium;Brightest;18571;958;midprice
+Samoyed;working;2,8;55;12,44;2;1;medium;Above average;21951;1162;midprice
+Beagle;hound;2,79;3;12,30;1;1;small;Lowest;16777;288;budget
+Chesapeake Bay Retriever;sporting;2,78;40;9,48;2;1;large;Above average;14432;522;budget
+Tibetan Terrier;non-sporting;2,75;64;12,31;2;2;small;Fair;17643;1140;midprice
+Gordon Setter;sporting;2,73;69;11,10;2;1;large;Above average;16953;700;midprice
+English Setter;sporting;2,72;65;11,57;2;1;large;Above average;17548;615;budget
+Pug;toy;2,72;26;11,00;2;1;medium;Fair;15421;469;budget
+Briard;herding;2,71;79;11,17;1;1;large;Above average;17004;650;budget
+Norfolk Terrier;terrier;2,71;76;13,07;2;2;small;Fair;21185;2083;highend
+FlatCoated Retriever;sporting;2,7;67;9,02;1;1;medium;Excellent;13845;600;budget
+Boston Terrier;non-sporting;2,61;22;10,92;2;1;medium;Average;15352;690;budget
+Doberman Pinscher;working;2,59;13;10,33;2;2;large;Brightest;15929;790;midprice
+English Toy Spaniel;toy;2,59;80;10,10;2;2;small;Average;14670;925;midprice
+Belgian Tervuren;herding;2,57;72;10,60;2;1;large;Excellent;16600;1070;midprice
+Cavalier King Charles Spaniel;toy;2,57;21;11,29;2;1;small;Average;16169;1017;midprice
+Dalmatian;non-sporting;2,57;57;11,27;2;1;medium;Above average;17194;695;budget
+Basset Hound;hound;2,54;36;11,43;2;1;small;Lowest;15827;490;budget
+Basenji;hound;2,51;68;13,58;2;2;medium;Lowest;19125;940;midprice
+Italian Greyhound;toy;2,49;53;10,02;2;3;small;Fair;14270;800;midprice
+Staffordshire Bull Terrier;terrier;2,48;58;12,05;2;1;medium;Average;18772;1145;midprice
+Bouvier des Flandres;herding;2,47;62;10,34;2;1;large;Above average;16489;1335;midprice
+Pembroke Welsh Corgi;herding;2,45;25;12,25;2;1;small;Excellent;19625;587;budget
+Clumber Spaniel;sporting;2,44;82;10,00;2;1;medium;Above average;15695;1033;midprice
+Dandie Dinmont Terrier;terrier;2,42;87;12,17;1;1;small;Fair;18725;925;midprice
+Saluki;hound;2,41;75;12,00;1;1;medium;Average;21585;1525;highend
+Giant Schnauzer;working;2,38;70;10,00;1;2;large;Above average;21307;810;midprice
+Greyhound;hound;2,29;85;9,36;2;1;large;Average;13771;1175;midprice
+Scottish Terrier;terrier;2,27;45;10,69;1;2;small;Fair;15187;829;midprice
+Rottweiler;working;2,24;10;9,11;2;2;large;Brightest;16395;1118;midprice
+Kerry Blue Terrier;terrier;2,13;78;9,40;1;2;medium;Above average;14994;1200;midprice
+Afghan Hound;hound;2,08;66;11,92;1;1;large;Lowest;20818;890;midprice
+Newfoundland;working;2,07;37;9,32;2;1;large;Above average;16802;1178;midprice
+German Shepherd;herding;2,06;2;9,73;2;2;large;Brightest;15091;820;midprice
+Pekingese;toy;2,05;52;11,56;1;2;small;Lowest;17803;885;midprice
+Old English Sheepdog;herding;2,04;63;11,19;1;1;medium;Fair;19551;832;midprice
+Akita;working;1,95;41;10,16;2;3;large;Average;18217;1202;midprice
+Rhodesian Ridgeback;hound;1,91;38;9,10;2;2;large;Average;14355;995;midprice
+French Bulldog;non-sporting;1,9;18;9,00;2;1;medium;Fair;15116;1900;highend
+Borzoi;hound;1,89;71;9,08;1;2;large;Lowest;14007;675;budget
+Bernese Mountain Dog;working;1,85;31;7,56;2;1;large;Excellent;14032;1320;midprice
+Bull Terrier;terrier;1,85;44;10,21;2;2;medium;Fair;16051;1085;midprice
+Boxer;working;1,83;7;8,81;2;1;medium;Average;13641;700;midprice
+Alaskan Malamute;working;1,82;47;10,67;1;2;large;Average;19069;1210;midprice
+Chow Chow;non-sporting;1,76;54;9,01;1;2;medium;Lowest;13745;515;budget
+Bloodhound;hound;1,66;42;6,75;2;2;large;Lowest;11979;608;budget
+Irish Wolfhound;hound;1,66;60;6,94;2;1;large;Average;16039;1333;midprice
+Bullmastiff;working;1,64;35;7,57;2;1;large;Fair;12128;980;midprice
+Mastiff;working;1,57;28;6,50;2;1;large;Lowest;11224;900;midprice
+Great Dane;working;1,53;19;6,96;2;1;large;Average;12759;1040;midprice
+Saint Bernard;working;1,42;43;7,78;1;1;large;Fair;17336;875;midprice
+Bulldog;non-sporting;0,99;6;6,29;2;2;medium;Lowest;11977;2680;highend
+Airedale Terrier;terrier;;;11,45;;;medium;Above average;;733;midprice
+American English Coonhound;hound;;;11,5;;;large;;;283;budget
+American Eskimo Dog;non-sporting;;;;;;small;;;560;budget
+American Foxhound;hound;;;;;;medium;Average;;757;midprice
+American Staffordshire Terrier;terrier;;;;;;medium;Above average;;1043;midprice
+American Water Spaniel;sporting;;;;;;medium;Average;;730;midprice
+Anatolian Shepherd Dog;working;;;10,75;2;2;large;;;;
+Bearded Collie;herding;;;12,77;1;1;medium;Above average;;;
+Beauceron;herding;;;;;;large;;;967;midprice
+Belgian Malinois;herding;;;;2;1;large;Excellent;;1080;midprice
+Belgian Sheepdog;herding;;;;;;large;Excellent;;;
+Black and Tan Coonhound;hound;;;;;;large;Average;;325;budget
+Black Russian Terrier;working;;;;;;large;;;2833;highend
+Bluetick Coonhound;hound;;;;;;large;;;370;budget
+Boykin Spaniel;sporting;;;;;;medium;;;531;budget
+Canaan Dog;herding;;;14,67;2;1;medium;;;;
+Cane Corso;working;;;;;;large;;;1070;midprice
+Cardigan Welsh Corgi;herding;;;12,70;;;small;Excellent;;828;midprice
+Cesky Terrier;terrier;;;8,42;2;1;small;;;;
+Chinese Crested;toy;;;10,08;;;small;Fair;;538;budget
+Chinese Shar Pei;non-sporting;;;;;;medium;Average;;840;midprice
+Collie;herding;;;;;;large;Excellent;;650;budget
+Curly Coated Retriever;sporting;;;10,75;2;2;large;Average;;;
+English Foxhound;hound;;;;;;large;Average;;;
+Entlebucher Mountain Dog;herding;;;;;;medium;;;1167;midprice
+Field Spaniel;sporting;;;9,90;1;2;medium;Above average;;;
+Finnish Lapphund;herding;;;7,33;1;1;medium;;;;
+Finnish Spitz;non-sporting;;;11,17;2;1;medium;Average;;;
+German Pinscher;working;;;11,42;;;medium;;;1500;highend
+German Wirehaired Pointer;sporting;;;10,00;;;large;Average;;655;budget
+Glen of Imaal Terrier;terrier;;;10,42;;;small;;;;
+Great Pyrenees;working;;;10,00;;;large;Fair;;503;budget
+Greater Swiss Mountain Dog;working;;;6,80;;;large;;;1605;highend
+Harrier;hound;;;;;;medium;;;;
+Havanese;toy;;;10,25;;;small;;;830;midprice
+Ibizan Hound;hound;;;;2;1;large;Average;;1500;highend
+Icelandic Sheepdog;herding;;;;;;medium;;;;
+Irish Red and White Setter;sporting;;;11,57;;;large;;;1000;midprice
+Irish Terrier;terrier;;;;2;1;medium;Average;;588;budget
+Irish Water Spaniel;sporting;;;9,33;2;1;medium;Excellent;;;
+Japanese Chin;toy;;;9,25;;;small;Fair;;513;budget
+Keeshond;non-sporting;;;12,17;;;medium;Excellent;;610;budget
+Komondor;working;;;9,17;;;large;;;656;budget
+Kuvasz;working;;;;;;large;Average;;;
+Lakeland Terrier;terrier;;;;2;1;small;Fair;;1093;midprice
+Leonberger;working;;;6,98;2;1;large;;13232;1480;midprice
+Looked  nothing;;;;;;;;;;;
+Löwchen;non-sporting;;;10,00;;;small;;;;
+Manchester Terrier;terrier;;;9,32;;;small;Above average;;720;midprice
+Miniature Bull Terrier;terrier;;;6,60;;;small;;;1740;highend
+Miniature Pinscher;toy;;;;;;small;Above average;;535;budget
+Neapolitan Mastiff;working;;;;2;1;large;;;1760;highend
+Norwegian Buhund;herding;;;12,67;;;medium;;;;
+Norwegian Elkhound;hound;;;;;;medium;Above average;;448;budget
+Norwegian Lundehund;non-sporting;;;;;;small;;;;
+Norwich Terrier;terrier;;;;2;2;small;Above average;;1245;midprice
+NOT POSSIBLE IF NO INTELLIGENCE DATA;;;;;;;;;;;
+Nova Scotia Duck Tolling Retriever;sporting;;;6,50;2;1;medium;;11100;1500;highend
+Otterhound;hound;;;10,80;2;1;large;Average;;;
+Parson Russell Terrier;terrier;;;;2;2;small;;;528;budget
+Petit Basset Griffon Vendeen;hound;;;12,70;;;small;Fair;;400;budget
+Plott;hound;;;;;;medium;;;;
+Polish Lowland Sheepdog;herding;;;10,80;2;2;medium;;;;
+Portuguese Water Dog;working;;;11,42;;;medium;;;;
+Puli;herding;;;;;;medium;Above average;;913;midprice
+Pyrenean Shepherd;herding;;;;;;medium;;;;
+Redbone Coonhound;hound;;;;;;large;;;425;budget
+Schipperke;non-sporting;;;13,00;;;small;Excellent;;658;budget
+Scottish Deerhound;hound;;;8,70;;;large;Average;;;
+Sealyham Terrier;terrier;;;12,25;;;small;Fair;;;
+Shiba Inu;non-sporting;;;7,00;;;small;;;890;midprice
+Silky Terrier;toy;;;14,25;;;small;Above average;;448;budget
+Skye Terrier;terrier;;;11,00;;;small;Fair;;550;budget
+Smooth Fox Terrier;terrier;;;13,17;;;small;Average;;575;budget
+SoftCoated Wheaten Terrier;terrier;;;12,16;;;medium;Average;;832;midprice
+Spinone Italiano;sporting;;;9,00;;;large;;;1725;highend
+Standard Schnauzer;working;;;;;;medium;Excellent;;855;midprice
+Sussex Spaniel;sporting;;;11,17;2;3;small;;;;
+Swedish Vallhund;herding;;;14,17;2;1;small;;19739;772;midprice
+Tibetan Mastiff;working;;;11,92;2;1;large;;20899;3460;highend
+Toy Fox Terrier;toy;;;;;;small;;;460;budget
+Vizsla;sporting;;;12,50;;;medium;Excellent;;935;midprice
+Weimaraner;sporting;;;;2;1;large;Excellent;;562;budget
+Welsh Terrier;terrier;;;;2;1;small;Average;;843;midprice
+Wire Fox Terrier;terrier;;;13,17;;;small;Average;;668;budget
+Wirehaired Pointing Griffon;sporting;;;8,80;;;medium;Average;;755;midprice
+Xoloitzcuintli;non-sporting;;;;;;medium;;;717;midprice

@@ -1,0 +1,146 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+<!-- Template for students  -->
+
+---
+title: "Task 1. Data explorations (30%) "
+subtitle: "Dog breeds"
+author: "studentNumber"
+output: html_document or choose pdf_document
+---
+
+
+The dataset for this task contains information on different dog breeds (`dog_breed`). The variables that you require for this assignment are:
+
+ - `category`: breed category
+ - `lifetime_costs`: expected lifetime costs in dollars
+ - `suitability_for_children`: suitability for children (1 = high, 2 = medium, 3 = low)
+ - `longevity`: mean life expectancy in years
+ - `popularity_inUS_ranking`: popularity in the US, 1 = most popular, higher values indicates lower popularity
+
+
+```{r, message = FALSE}
+# Load packages
+
+library(tidyverse)
+library(foreign) 
+
+# Import data:
+dogbreeds <- read_csv2("DogBreeds_selected.csv")
+```
+
+### Template file and submission:
+
+Add your code to the provided template file. Write reproducible and readable code to make the plots for both exercise a and b and make sure that the plots are visible in your output file (.html/.pdf). Keep the data stored in the subfolder so your .Rmd file can reach it. 
+
+For more submission instructions, please see the general instructions of this Graded Assignment.
+
+### a) Data descriptives - distributions per variable
+
+Create suitable data visualizations to show the individual distributions of the breeds' mean life expectancy (`longevity`), suitability for children (`suitability_for_children`), categories (`category`) and expected lifetime costs (`lifetime_costs`). For each plot, only use the data that is available, i.e. exclude missing observations.
+
+```{r}
+library(RColorBrewer)
+library(ggmosaic)
+library(see)
+
+
+summary(dogbreeds)
+
+cleaned <- na.omit(dogbreeds)
+```
+
+*Note: 
+These plots are expected to be self-contained (i.e. readers should be able to understand them without extra explanation) and to obey the principles of good graphics, but they are not meant to be formal presentation graphics. For example, you are not expected to use additional information to make the plot information rich. The focus is on uncovering the distributions of the variables.*
+
+#### Explore mean life expectancy (`longevity`)
+
+```{r}
+# your code here
+
+ggplot(data = cleaned, aes(x = longevity)) + geom_density(fill="darkcyan", 
+                                                                         alpha = 0.7,
+                                                                         color=NA) + 
+  labs(x= "Longevity", y ="Density") +ggtitle("Longevity over all breeds")+ theme_minimal()
+
+ggplot(data = cleaned, aes(x = longevity)) + geom_density(fill="darkcyan", 
+                                                                         alpha = 0.7,
+                                                                         color=NA) + 
+  labs(x= "Longevity", y ="Density") +ggtitle("Longevity over all breeds for specific categories") + facet_wrap(~category)
+```
+
+#### Explore suitability for children (`suitability_for_children`)
+
+```{r}
+# your code here
+ggplot(data = cleaned, aes(x = suitability_for_children)) + geom_density(fill="dodgerblue", 
+                                                                         alpha = 0.7,
+                                                                         color=NA) + 
+  labs(x= "Suitability for children", y ="Density") +ggtitle("Suitability for children over all breeds")+ theme_minimal()
+  
+
+
+ggplot(data = cleaned, aes(x = suitability_for_children)) + geom_density(fill="dodgerblue", 
+                                                                         alpha = 0.7,
+                                                                         color=NA) + 
+  labs(x= "Suitability for children", y ="Density") +ggtitle("Suitability for children in specific categories") + facet_wrap(~category)
+```
+
+#### Explore categories (`category`)
+
+```{r}
+# your code here
+
+ggplot(data = cleaned, 
+       mapping = aes(
+         x = category,
+         fill = category
+       )) + geom_bar(stat="count") +theme_minimal() + theme(legend.position="None") + ggtitle("Categories of Dog Breeds") + labs(y="Frequency")
+
+```
+
+#### Explore expected lifetime costs (`lifetime_costs`)
+
+```{r}
+
+ggplot(data = cleaned, aes(x = lifetime_costs)) + geom_density(fill="firebrick",alpha = 0.7,
+                                                                         color=NA) + 
+  labs(x= "Lifetime Costs", y ="Density") +ggtitle("Lifetime costs over all breeds") + theme_minimal()
+  
+
+# your code here
+
+ggplot(data = cleaned, aes(x = lifetime_costs)) + geom_density(fill="firebrick", 
+                                                                         alpha = 0.7,
+                                                                         color=NA) + 
+  labs(x= "Lifetime costs", y ="Density") +ggtitle("Lifetime costs in specific categories") + facet_wrap(~category)
+```
+
+
+### b) Data descriptives - relationships among 3 variables
+
+Assume that you are studying reasons why some dog breeds are more popular than others. Your main hypothesis is that a dog breed's popularity in the US (`popularity_inUS_ranking`) depends on the expected lifetime costs of the breed (`lifetime_costs`). Additionally, you think that a breed's suitability for children (`suitability_for_children`) might be relevant. 
+
+Make a visualisation that focuses mostly on exploring your main hypothesis that popularity depends on lifetime costs, but also gives an indication of whether the breed's suitability for children has an influence.
+
+*Note:
+This plot is expected to be self-contained (i.e. readers should be able to understand them without extra explanation) and to obey the principles of good graphics, but it is not meant to be formal presentation graphics. For example, you are not expected to use additional information to make the plot information rich. The focus is on uncovering the relationship among the variables.*
+
+
+```{r}
+# your code here
+
+ggplot(data = cleaned,
+       mapping = aes(
+         x = lifetime_costs,
+         y = popularity_inUS_ranking
+        
+       )) + geom_point( aes(color = as.factor(suitability_for_children)))  + 
+  geom_smooth(method="lm", se=FALSE, color="black") + theme_minimal() + 
+  labs(x="Lifetime costs", y="Popularity in the US", color="Suitability for Children")
+  
+```
+From the graph above it is safe to say that while there is a positive relationship between lifetime costs and popularity in the US, there is very little effect of suitability for children on popularity (seen by the points both above and below). 

@@ -1,0 +1,97 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+<!-- Template for students -->
+
+---
+title: "Task 2. Remake the plot (35%)"
+subtitle: "The rise of the A.I. Large Language Models"
+author: "4168216"
+output: html_document # or pdf_document
+---
+
+The data visualisation website *Information Is Beautiful* contains a visualisation the rise of A.I. Large Language Models (LLMs). It shows the dates at which the models (and associated bots) were published, the number of parameters they are trained on, and which company owns them.
+
+You can see the visualisation on [\color{blue}this website](https://informationisbeautiful.net/visualizations/the-rise-of-generative-ai-large-language-models-llms-like-chatgpt/). In the assignment you see a simplified version of this plot, e.g. indicating fewer owners and without labels for each model.
+
+Your task is to remake the plot below. The variables that you will need are: 
+
+-   `name`: name of the Large Language Model
+-   `owner_simplified`: company that owns the model (simplified version, contains fewer categories than original variable `owner`)
+-   `parameters`: number of parameters the model was trained on (in billions)
+-   `date`: date of publication of the model
+
+### Template file and submission:
+
+Add your code to the provided template file. Write reproducible and readable code and make sure that the plot is visible in your output file (.html/.pdf). Keep the data stored in the subfolder so your .Rmd file can reach it.
+
+For more submission instructions, please see the general instructions of this Graded Assignment.
+
+### Load data:
+
+```{r, message = FALSE}
+# Load packages
+
+library(tidyverse)
+library(foreign) 
+
+# Import data:
+dataLLMs <- read_csv2("aiBasedLLMs.csv")
+
+summary(dataLLMs)
+#ggplot(dat)
+```
+```{r}
+ggplot(dataLLMs, 
+       aes(x = date,
+           y = parameters,
+           size = parameters,
+           color = owner_simplified
+           )) +
+  geom_point(alpha = 0.5) + 
+  scale_radius(name = "Body Mass (g)") + 
+  scale_size_continuous(range = c(1, 10)) +
+  theme(legend.position = "top") + theme_minimal() +  theme(legend.position="top") + guides(fill=guide_legend(nrow=1)) +  
+  scale_x_date(date_breaks="1 year", date_labels="%Y") +
+  coord_trans(x="log2") + guides(size=FALSE) + labs(color = "Owner") + 
+   scale_color_manual(values = c("Amazon" = "sienna1", 
+                               "Apple" = "darkcyan", 
+                               "Anthropic" = "orange1", 
+                               "Google" = "khaki1",
+                               "OpenAI" = "cornflowerblue",
+                               "Meta/Facebook" = "skyblue3",
+                               "Other" = "violetred1"  ))
+```
+
+
+```{r}
+ggplot(dataLLMs, 
+       aes(x = date,
+           y = parameters,
+           size = parameters,
+           color = owner_simplified
+           )) +
+  geom_point(alpha = 0.5) + 
+  scale_radius(name = "Body Mass (g)") + 
+  scale_size_continuous(range = c(1, 10)) +
+  theme(legend.position = "top") + theme_minimal() +  theme(legend.position="top") + guides(fill=guide_legend(nrow=1)) +  
+  scale_x_date(date_breaks="1 year", date_labels="%Y") +
+  coord_trans(x="log2") + guides(size=FALSE) + labs(color = "Owner") + 
+   scale_color_manual(values = c("Amazon" = "sienna1", 
+                               "Apple" = "darkcyan", 
+                               "Anthropic" = "orange1", 
+                               "Google" = "khaki1",
+                               "OpenAI" = "cornflowerblue",
+                               "Meta/Facebook" = "skyblue3",
+                               "Other" = "violetred1"  ))
+```
+
+### Your plot:
+
+```{r, fig.width = 8, fig.height = 6}
+# Do not change the above fig.width = 8 and fig.height = 6; it will give you the same dimensions as the plot in the task.
+
+# your code here
+```

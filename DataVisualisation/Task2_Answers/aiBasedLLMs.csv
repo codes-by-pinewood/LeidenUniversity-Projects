@@ -1,0 +1,126 @@
+name;owner;parameters;date;owner_simplified
+BERT;Google;0,34;2018-10-01;Google
+GPT-2;OpenAI;1,50;2019-02-01;OpenAI
+T5;Google;11,00;2019-10-01;Google
+Megatron-11B;Meta / Facebook;11,00;2020-04-01;Meta/Facebook
+BlenderBot1;Meta / Facebook;9,40;2020-04-01;Meta/Facebook
+GPT-3;OpenAI;175,00;2020-05-01;OpenAI
+Wu Dao 2.0;Beijing Academy of AI;1750,00;2021-01-01;Other
+GPT-J;EleutherAI;6,00;2021-06-01;Other
+PanGu-Alpha;Huawei;200,00;2021-04-01;Other
+LaMDA;Google;137,00;2021-06-01;Google
+BlenderBot2.0;Meta / Facebook;9,40;2021-07-01;Meta/Facebook
+Jurassic-1;AI21;178,00;2021-08-01;Other
+Codex;OpenAI;12,00;2021-08-01;OpenAI
+FLAN;Google;137,00;2021-09-01;Google
+PLATO-XL;Baidu;11,00;2021-09-01;Other
+WeLM;WeChat;10,00;2022-09-01;Other
+xlarge;Cohere;52,40;2021-09-01;Other
+Megatron-Turing NLG;Meta / Facebook;530,00;2021-10-01;Meta/Facebook
+MT-NLG;Microsoft;530,00;2021-10-01;Other
+BERT-200;Google;200,00;2021-11-01;Google
+BERT-480;Google;480,00;2021-11-01;Google
+Luminous;Aleph Alpha;200,00;2021-11-01;Other
+Ernie 3.0 Titan;Baidu;260,00;2021-12-01;Other
+GLaM;Google;1200,00;2021-12-01;Google
+Gopher;Google Deepmind;280,00;2021-12-01;Other
+GPT-NeoX;EleutherAI;20,00;2022-02-01;Other
+GPT Neo;EleutherAI;2,70;2022-02-01;Other
+Chinchilla;DeepMind;70,00;2022-03-01;Other
+CodeGen;Salesforce;16,00;2022-03-01;Other
+InCoder;Meta;6,70;2022-04-01;Meta/Facebook
+mGPT;Sber;13,00;2022-04-01;Other
+PaLM;Google;540,00;2022-04-01;Google
+OPT-IML;Meta AI;175,00;2022-05-01;Meta/Facebook
+Minerva;Google;540,00;2022-06-01;Google
+YaLM 100B;Yandex;100,00;2022-06-01;Other
+BLOOM;BigScience;175,00;2022-07-01;Other
+FIM 6.9B;OpenAI;6,90;2022-07-01;OpenAI
+NLLB-200;Meta AI;54,50;2022-07-01;Meta/Facebook
+GLM-130B;Tsinghua & Zhipu;130,00;2022-08-01;Other
+Atlas;Meta;11,00;2022-08-01;Meta/Facebook
+BlenderBot3;Meta / Facebook;175,00;2022-08-01;Meta/Facebook
+AlexaTM;Amazon;20,00;2022-08-01;Amazon
+PaLI;Google;17,00;2022-09-01;Google
+Sparrow;Google;70,00;2022-09-01;Google
+MT5;Google;13,00;2022-10-01;Google
+Galactica;Meta / Facebook;120,00;2022-11-01;Meta/Facebook
+ChatGPT;OpenAI;12,00;2022-11-01;OpenAI
+RL-CAI;Anthropic;52,00;2022-12-01;Anthropic
+Exaone;LG;300,00;2022-12-01;Other
+GPT 3.5;OpenAI;175,00;2022-12-01;OpenAI
+WebGPT;Open AI / Microsoft;175,00;2023-01-01;OpenAI
+Claude;Anthropic;52,00;2023-01-01;Anthropic
+LLaMa;Meta / Facebook;65,00;2023-02-01;Meta/Facebook
+Luminous Supreme;Aleph Alpha;70,00;2023-02-01;Other
+PanGu-Sigma;Huawei;1085,00;2023-03-01;Other
+Bard*;Google;0,70;2023-02-01;Google
+Alpaca;Stanford;7,00;2023-03-01;Other
+BloombergGPT;Bloomberg;50,00;2023-03-01;Other
+Cerebras-GPT;Cerebras;13,00;2023-03-01;Other
+Ernie Bot;Baidu;200,00;2021-12-01;Other
+GPT-4*;OpenAI;1,00;2023-03-01;OpenAI
+GPT4All-LoRA;Nomic;7,00;2023-03-01;Other
+Jurassic-2*;AI21;200,00;2023-03-01;Other
+Koala-13B;Berkeley;13,00;2023-04-01;Other
+StableLM;Stability AI;65,00;2023-04-01;Other
+Dolly 2.0;Databricks;12,00;2023-04-01;Other
+SenseChat;SenseTime;200,00;2023-04-01;Other
+Titan;Amazon;350,00;2023-04-01;Amazon
+Tongyi Qianwen;Alibaba;200,00;2023-04-01;Other
+Hugging Chat;LAION;30,00;2023-04-01;Other
+BingChat*;Microsoft / OpenAI;1,00;2023-04-01;Other
+PaLM2;Google;540,00;2023-05-01;Google
+Vicuna-13B;Vicuna Team;65,00;2023-03-01;Other
+Falcon LLM;Technology Innovation Institute;40,00;2023-06-01;Other
+Sail-7B;Open Language Safety Research;7,00;2023-06-01;Other
+Web LLM;Independent;7,00;2023-06-01;Other
+OpenLLM;Independent;13,00;2023-06-01;Other
+Ernie Bot 3.5;Baidu;200,00;2023-07-01;Other
+Claude 2;Anthropic;52,00;2023-07-01;Anthropic
+LLaMa2;Facebook;70,00;2023-07-01;Other
+Bichuan 2;Baichuan Intelligence;13,00;2023-07-01;Other
+Claude Instant;Anthropic;52,00;2023-08-01;Anthropic
+IDEFICS;Independent;80,00;2023-08-01;Other
+Jais Chat;Independent;13,00;2023-08-01;Other
+Japanese StableLM Alpha 7B;Stability AI;7,00;2023-08-01;Other
+InternLM;Independent;20,00;2023-09-01;Other
+Falcon 180B;TII;180,00;2023-09-01;Other
+Bolt 2.5B;ThirdAI;3,00;2023-09-01;Other
+DeciLM;Deci AI;5,70;2023-09-01;Other
+Mistral-7B;Mistral AI;7,00;2023-09-01;Other
+Persimmon-8B;Adept;8,00;2023-09-01;Other
+MoLM;IBM;8,00;2023-09-01;Other
+Qwen;Alibaba;14,00;2023-09-01;Other
+AceGPT;KAUST/Shenzhen;13,00;2023-09-01;Other
+Retro48B;Nvidia;48,00;2023-09-01;Other
+Ernie 4.0;Baidu;1,00;2023-10-01;Other
+Fuyu;Adept;8,00;2023-10-01;Other
+Orca 2;Microsoft;13,00;2023-11-01;Other
+Grok;Twitter;33,00;2023-11-01;Other
+Grok 0;Twitter;33,00;2023-11-01;Other
+MEDITRON;EPFL;70,00;2023-11-01;Other
+pplx-70b;Perplexity;70,00;2023-11-01;Other
+Yuan 2.0;IEIT;102,00;2023-11-01;Other
+Claude 2.1;Anthropic;130,00;2023-11-01;Anthropic
+Grok 1;Twitter;314,00;2023-11-01;Other
+GPT-4 Turbo;Open AI;1,00;2023-11-01;OpenAI
+Inflection-2;Inflection;1,20;2023-11-01;Other
+SeaLLM;Alibaba;13,00;2023-12-01;Other
+Mistral-small;Mistral AI;47,00;2023-12-01;Other
+Q;Amazon;180,00;2023-12-01;Amazon
+Mistral-medium;Mistral AI;180,00;2023-12-01;Other
+Gemini Ultra;Google;1,50;2023-12-01;Google
+Gemini Pro 1.5;Google;1,50;2024-02-01;Google
+MGIE;Apple;7,00;2024-01-01;Apple
+DeepSeek;Wenge;67,00;2024-01-01;Other
+Fuyu-heavy;Adept;120,00;2024-01-01;Other
+GLM-4;Zhipu AI;200,00;2024-01-01;Other
+Xinghuo 3.5;iFlyTek;200,00;2024-01-01;Other
+Qwen 1.5;Alibaba;72,00;2024-02-01;Other
+175B;ByteDance;175,00;2024-02-01;Other
+530B;ByteDance;530,00;2024-02-01;Other
+Mistral-large;Mistral AI;540,00;2024-02-01;Other
+MM1;Apple;30,00;2024-03-01;Apple
+Inflection-2.5;Inflection;1,20;2024-03-01;Other
+Claude 3;Anthropic;2,00;2024-03-01;Anthropic
