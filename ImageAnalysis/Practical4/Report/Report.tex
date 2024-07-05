@@ -1,0 +1,1218 @@
+\documentclass{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[english]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{pdflscape} % Add this package for landscape pages
+\usepackage{caption,subcaption}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{Image Analysis Assignment 4}
+\author{Sherry Usman, Megan Mirnalini Sundaram R}
+\begin{document}
+\maketitle
+
+\section*{Part 4.1}
+\subsection*{Choice of Cells}
+\par To pick a set of cells, pre-processing images to detect finer objects better is important. For that we first made the image single-channel by averaging the intensity values over all channels and creating a new gray-scale image. Then we applied morphological operations such as contrast stretching to remove underexposure areas and more accurately highlight the cells. Then we implemented a morphological opening to erode the objects(or foreground) and subsequently dilate them. This was done so that clusters of connected objects could be separated into separate distinct objects (separate cells) for better identification but not so much that smaller objects completely disappear. Then, range thresholding was used to allow emphasis on areas of images with higher intensities (or cells). Lastly, labeling was used to give connected objects a unified symbol for better identification. Through this iterative procedure, we procured a series of images that were ready for image analysis.\newline 
+
+\par For our series of images, we chose a set of points by implementing a function that randomly selected 15 rows from the rows of objects in the labeled images with the condition that the points were well within the data frame (between 50 and 450 in the x-axis and y-axis). Using the random points that were generated, we manually observed their behavior over the series of images and decided upon three criteria to keep/discard the points. 
+\begin{itemize}
+    \item how erratic their movement was
+    \item whether they split or merged with other cells
+    \item whether they stay in the frame of the image or not
+\end{itemize}
+
+Cells that were too erratic in their movements, merged with or split from other cells, or left the frame were removed from our selection. This left us with a final set of cells that were more stable in their movement and did not leave the frame. The annotated selected cells are shown in figures \ref{fig:ChoiceofCells-ControlSeries} and \ref{fig:ChoiceofCells-GrowthSeries}. 
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\linewidth]{Images/final_points_chosen.png}
+\caption{\label{fig:ChoiceofCells-ControlSeries}The image shows the choice of cells in the \emph{Control Series}}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\linewidth]{Images/final_points_chosen_growth.png}
+\caption{\label{fig:ChoiceofCells-GrowthSeries}The image shows the choice of cells in the \emph{Growth Series}}
+\end{figure}
+
+
+\subsection*{Manual Check of the tracing of 5 cells}
+Initially, points 1-5 were chosen to track the movement of the cells across the series. We noticed that in most cases, the cells move a little further away in each frame, and do not move rapidly. So, we decided that by calculating the closest points of the cell in the next frame, we could estimate the movement of the cells accurately. 
+~\\We tracked the progress of 15 cells by creating an algorithm that iteratively finds the 15 closest objects/cells from the dataframe of the next image and then updates the objects' locations. This was estimated using Euclidean distance between the points in the first frame, and the closest points in the next frame. 
+\begin{equation*}
+    \displaystyle d(p,q)={\sqrt {(p-q)^{2}}}
+\end{equation*}
+~\\This is done sequentially till image 30 and the result is a series of images with labeled cells. Our results are shown in Appendix 1. 
+
+\subsection*{Algorithm to trace the cells}
+To track the movement of the cells, the images must be processed first, to remove the glare and other distortions from the setup. Hence, the first algorithm \ref{algo:cell-trace} deals with the processing and labeling of the cells in the image. This allows us to gather further details on the cells, which were essential to tracing the cells. 
+~\\ As seen, the image preprocessing includes a range of morphological operations that make the images sharper and clearer, finally resulting in an image where the objects can be labeled. Then dip.MeasurementTools can be used to capture the objects in each image and their features such as location in x (dim0) and location in y (dim1). Since this table can often be very large and confusing to navigate it is advised to use data parsing to convert this string into a dataframe with rows and columns. This allows for much easier manipulation and data wrangling.  \newline
+The algorithm we chose for point selection can be divided into two parts - Algorithm \ref{algo:generate-random-points} and Algorithm \ref{algo:find-closest-rows}. Algorithm \ref{algo:generate-random-points} shows a selection of random points with certain criterion (that they should not be too close to the border). With these initial points selected, we apply Algorithm \ref{algo:find-closest-rows} called closest rows on the initial points. As the function name indicates, closest rows attempts to find the closest rows (in terms of distance) between the initial points selected and the next dataframe (the next image). It does this by initialising a window size and finding objects in this window. If and when no objects are found in this window, the window size is gradually increased until an object is found. When an object is found, it now becomes the new \emph{points selected} and i then propagated to the next data frame to find the closest rows to it. 
+The plots we see are visualisations of selected points in each image. 
+
+\begin{algorithm}[h!]
+\caption{Pre-processing Images}\label{algo:cell-trace}
+\begin{algorithmic}[1]
+\Procedure{ImageProcessing}{$\text{images}$}
+    \State $\text{closest\_row[figure]} \gets \text{empty list}$
+    \For{$\text{image}$ \textbf{in} $\text{images}$}
+        \State $gray\_image \gets \text{Grayscale}(image)$
+        \State $image\_contrasted \gets \text{ContrastStretch}(image)$
+        \State $image\_eroded \gets \text{Erosion}(image\_contrasted)$
+        \State $threshold\_image \gets \text{RangeThreshold}(mage\_eroded)$
+        \State $image\_labeled \gets \text{Label}(threshold\_image)$
+        \State Using Measurement.Tools determine the center (in x and y) of objects in each $image\_labeled$
+        \State Parse the measurements into dataframes for each image 
+    \EndFor
+    \For{$\text{dataframe}$ \textbf{in} $\text{dataframes}$}
+        \State $matching\_points \gets \text{center\_of\_gravity}(image) \And \text{center\_of\_gravity}(image+1)$
+        \State $filtered\_matching\_points \gets \text{center\_of\_gravity}(image) \And \text{center\_of\_gravity}(image+1)$
+        \State Superimpose points on images
+    \EndFor
+    \State \textbf{return} Graph of points on images
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[h!]
+\caption{Generate Random Points}\label{algo:generate-random-points}
+\begin{algorithmic}[1]
+\Function{GenerateRandomPoints}{$\text{num\_points}$}
+    \State $selected\_points \gets$ empty list
+    \For{$i$ \textbf{in} $\text{range}(num\_points)$}
+        \State $random\_point \gets [\text{random.uniform}(100, 400), \text{random.uniform}(100, 400)]$
+        \State $selected\_points.\text{append}(random\_point)$
+    \EndFor
+    \State \textbf{return} $selected\_points$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[h!]
+\caption{Finding Closest Rows}\label{algo:find-closest-rows}
+\begin{algorithmic}[1]
+\Function{FindClosestRows}{$df, selected\_points, max\_window\_size$}
+    \State $closest\_rows \gets$ empty list
+    \State $df\_coords \gets df[['dim0', 'dim1']].values$
+    \For{$point$ \textbf{in} $selected\_points$}
+        \State $window\_size \gets 0.5$
+        \State $found\_object \gets$ False
+        \While{$window\_size \leq max\_window\_size$}
+            \State $distances \gets \text{np.sum}((df\_coords - point)^2, \text{axis}=1)$
+            \State $mask \gets distances \leq window\_size^2$
+            \If{$\text{np.any}(mask)$}
+                \State $closest\_row\_index \gets \text{np.argmin}(distances[mask])$
+                \State $closest\_row \gets \text{tuple}(df[mask].iloc[closest\_row\_index][['dim0', 'dim1']])$
+                \State $closest\_rows.\text{append}(closest\_row)$
+                \State $found\_object \gets$ True
+                \State \textbf{break}
+            \EndIf
+            \State $window\_size \gets window\_size + 1$
+        \EndWhile
+        \If{not $found\_object$}
+            \State $closest\_rows.\text{append}(None)$  \Comment{Or any value to indicate no object found}
+        \EndIf
+    \EndFor
+    \State \textbf{return} $closest\_rows$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+\par The processing of the images is first done by converting the image to a grayscale, and then contrast stretching with a lower bound of 0 and an upper bound of 75. The contrast-stretched image was then subjected to erosion. This removed the white noise on the image and highlighted the cells of interest. The image was then, thresholded and labeled. This allowed us to get the measurements of the objects i.e., cells such as center of gravity, size and mean of the objects. 
+\par The measurements were then compiled into a dataframe. The center of gravity of each object allowed us to track the movement in each image, as this served as the x- and y-coordinates for the movement. 
+\subsection*{Application of Algorithm and Results}
+The algorithms were applied successfully, and the results are tabulated in further sections. The images gathered from each trace have been attached to the Appendix. 
+\newpage
+\section*{Part 4.2}
+\subsection*{Shape and Texture}
+In order to calculate shape and texture it is important to capture image features like size, perimeter, roundness, standard deviation, smoothness and uniformity. This is all a simple operation in the diplib library. The average of these features for each cell in Series A (Control series) and Series B (Growth Series) is shown in table \ref{table:SummaryCellFeatures-SeriesA} and \ref{table:SummaryCellFeatures-SeriesB}.
+
+\begin{table}[h!]
+\centering
+\caption{Summary of Cell Features in A Series}\label{table:SummaryCellFeatures-SeriesA}
+\begin{tabular}{|p{1.2cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.7cm}|p{1.5cm}|p{1.7cm}|p{1.5cm}|p{1.7cm}|}
+\hline
+\multicolumn{9}{|c|}{\textbf{Cell Features in A Series}} \\
+\hline
+\textbf{Cells} & \textbf{Average Area} & \textbf{Perimeter} & \textbf{Average Roundness} & \textbf{Mean Intensity} & \textbf{Average Standard Deviation} & \textbf{Average Smoothness} & \textbf{Average Velocity} & \textbf{Average Distance} \\
+\hline
+\textbf{Cell 1} & 681.38 & 8548.72 & 128.08 & 23481.72 & 681.38 & 0.99 & 0.0684 & 8.205 \\
+\textbf{Cell 2} & 953.28 & 8034.45 & 128.33 & 21312.41 & 953.31 & 0.99 & 0.0727 & 8.728 \\
+\textbf{Cell 3} & 965.24 & 7834.79 & 134.13 & 21193.45 & 965.76 & 0.99 & 0.0557 & 6.685 \\
+\textbf{Cell 4} & 887.34 & 8161.00 & 117.99 & 21281.72 & 887.34 & 0.99 & 0.1717 & 20.605 \\
+\textbf{Cell 5} & 871.72 & 6328.86 & 121.35 & 18226.55 & 872.00 & 0.99 & 0.0696 & 8.36 \\
+\textbf{Cell 6} & 1217.69 & 6137.69 & 166.84 & 17727.28 & 1218.03 & 0.99 & 0.0791 & 9.492 \\
+\textbf{Cell 7} & 1039.83 & 6217.72 & 143.28 & 17879.31 & 1040.03 & 0.99 & 0.0862 & 10.34 \\
+\textbf{Cell 8} & 1039.83 & 6217.72 & 143.28 & 17879.31 & 1040.03 & 0.99 & 0.0641 & 7.693 \\
+\textbf{Cell 9} & 2277.59 & 3895.48 & 227.32 & 15520.34 & 2305.00 & 0.99 & 0.0889 & 10.68 \\
+\textbf{Cell 10} & 5150.62 & 5740.38 & 485.59 & 17210.34 & 5312.45 & 0.99 & 0.0644 & 7.723 \\
+\textbf{Cell 11} & 747.55 & 3208.52 & 110.24 & 14301.38 & 748.83 & 0.99 & 0.0568 & 6.823 \\
+\textbf{Cell 12} & 635.62 & 4784.07 & 98.96 & 16984.14 & 635.62 & 0.99 & 0.0898 & 10.776 \\
+\textbf{Cell 13} & 750.14 & 5769.72 & 108.39 & 18252.76 & 750.24 & 0.99 & 0.0399 & 4.793 \\
+\textbf{Cell 14} & 732.97 & 7609.90 & 106.96 & 20932.76 & 733.03 & 0.99 & 0.0529 & 6.349 \\
+\textbf{Cell 15} & 387.24 & 3793.31 & 54.57 & 14664.62 & 387.38 & 0.99 & 0.0419 & 5.035 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+\begin{table}[h!]
+\centering
+\caption{Summary of Cell Features in B Series}\label{table:SummaryCellFeatures-SeriesB}
+\begin{tabular}{ |p{1.2cm}|p{1.5cm}|p{1.5cm}|p{1.7cm}|p{1.7cm}|p{1.7cm}|p{1.7cm}|p{1.7cm}|p{1.7cm}|p{1.7cm}| }
+\hline
+\multicolumn{9}{|c|}{\textbf{Cell Features in B Series}} \\
+\hline
+\textbf{Cells} & \textbf{Average Area} & \textbf{Perimeter} & \textbf{Average Roundness} & \textbf{Mean Intensity} & \textbf{Average Standard Deviation} & \textbf{Smoothness} & \textbf{Average Velocity} & \textbf{Average Distance} \\
+\hline
+\textbf{Cell 1} & 374.38 & 3103.83 & 128.08 & 13465.03 & 374.38 & 0.99 & 0.1301 & 15.6089\\
+\textbf{Cell 2} & 744.45 & 4224.79 & 125.90 & 15578.28 & 744.45 & 0.99 & 0.1423 & 17.0778 \\
+\textbf{Cell 3} & 479.69 & 3046.28 & 89.84 & 13241.28 & 479.69 & 0.99 & 0.1419 & 17.0312 \\
+\textbf{Cell 4} & 657.38 & 7416.93 & 110.84 & 18673.10 & 657.38 & 0.99 & 0.1369 & 16.4306 \\
+\textbf{Cell 5} & 737.14 & 8457.34 & 120.98 & 19833.45 & 737.14 & 0.99 & 0.1120 & 13.4398\\
+\textbf{Cell 6} & 792.90 & 6694.55 & 127.98 & 17979.66 & 792.90 & 0.99 & 0.1286 & 15.4329\\
+\textbf{Cell 7} & 571.21 & 5840.88 & 100.84 & 17377.52 & 571.21 & 0.99 & 0.1117 & 13.4122\\
+\textbf{Cell 8} & 579.03 & 5803.84 & 100.74 & 17474.83 & 579.03 & 0.99 & 0.1124 & 13.4929\\
+\textbf{Cell 9} & 758.14 & 7444.23 & 127.70 & 19272.48 & 758.14 & 0.99 & 0.1131 & 13.5705\\
+\textbf{Cell 10} & 596.10 & 8074.52 & 106.17 & 20615.90 & 596.10 & 0.99 & 0.1083 & 12.9981\\
+\textbf{Cell 11} & 503.21 & 7720.45 & 91.83 & 20281.41 & 503.21 & 0.99 & 0.0399 & 4.7887\\
+\textbf{Cell 12} & 540.48 & 6665.48 & 97.17 & 19052.79 & 540.48 & 0.99 & 0.1461 & 17.5353\\
+\textbf{Cell 13} & 547.17 & 6202.03 & 95.64 & 18167.28 & 547.17 & 0.99 & 0.1202 & 14.4230\\
+\textbf{Cell 14} & 678.14 & 5711.48 & 113.63 & 17195.24 & 678.14 & 0.99 & 0.1086 &  13.0329\\
+\textbf{Cell 15} & 569.52 & 7338.17 & 89.87 & 20958.62 & 569.52 & 0.99 & 0.1044 & 12.5338\\
+\hline
+\end{tabular}
+\end{table}
+\clearpage
+Similarly, uniformity of the cell is an indicator of the texture of the cell. Uniformity is given by 
+\begin{equation*}
+    \displaystyle{U} = \sum_0^{L-1}p^2 \cdot z_i^2
+\end{equation*}
+where $z_i$ is the intensity at level i, and p is the probability of the occurrence. 
+Since the cells chosen were spread throughout the image, the ROI would be the entire frame. Hence, the uniformity was calculated for the frame as a whole. 
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{ |p{3cm}||p{3cm}|p{3cm}|  }
+     \hline Frame & Control Series & Growth Series\\
+ \hline 
+\textbf{Frame 1} & 7.32E-12 & 1.63E-11\\
+\textbf{Frame 2} & 6.95E-12 & 1.60E-11\\
+\textbf{Frame 3} & 5.92E-12 & 9.75E-12\\
+\textbf{Frame 4} & 4.57E-12 & 8.23E-12\\
+\textbf{Frame 5} & 6.87E-12 & 1.15E-11\\
+\textbf{Frame 6} & 6.36E-12 & 1.02E-11\\
+\textbf{Frame 7} & 5.43E-12 & 7.68E-12\\
+\textbf{Frame 8} & 4.36E-12 & 7.05E-12\\
+\textbf{Frame 9} & 5.29E-12 & 9.24E-12\\
+\textbf{Frame 10} & 5.73E-12 & 9.00E-12\\
+\textbf{Frame 11} & 6.17E-12 & 1.07E-11\\
+\textbf{Frame 12} & 6.00E-12 & 9.69E-12\\
+\textbf{Frame 13} & 8.36E-12 & 1.53E-11\\
+\textbf{Frame 14} & 5.48E-12 & 9.31E-12\\
+\textbf{Frame 15} & 7.90E-12 & 1.39E-11\\
+\textbf{Frame 16} & 6.79E-12 & 1.16E-11\\
+\textbf{Frame 17} & 8.13E-12 & 1.37E-11\\
+\textbf{Frame 18} & 6.57E-12 & 1.11E-11\\
+\textbf{Frame 19} & 5.55E-12 & 9.44E-12\\
+\textbf{Frame 20} & 6.50E-12 & 9.39E-12\\
+\textbf{Frame 21} & 6.55E-12 & 1.54E-11\\
+\textbf{Frame 22} & 6.54E-12 & 1.21E-11\\
+\textbf{Frame 23} & 8.05E-12 & 1.43E-11\\
+\textbf{Frame 24} & 7.02E-12 & 1.25E-11\\
+\textbf{Frame 25} & 8.25E-12 & 1.52E-11\\
+\textbf{Frame 26} & 5.96E-12 & 1.04E-11\\
+\textbf{Frame 27} & 7.46E-12 & 1.54E-11\\
+\textbf{Frame 28} & 5.53E-12 & 1.03E-11\\
+\textbf{Frame 29} & 7.33E-12 & 1.39E-11\\
+\textbf{Frame 30} & 5.44E-12 & 1.07E-11\\
+ \hline
+    \end{tabular}
+    \caption{Uniformity of the Series}
+    \label{tab:Uniformity_Series}
+\end{table}
+
+As seen above, the uniformity of the control series is lower than that of growth series. Due to the movement of the cells throughout the frame, the texture is more, thus resulting in a low uniformity. 
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{1.2cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.7cm}|p{1.5cm}|p{1.7cm}|p{1.5cm}|p{1.7cm}|}
+\hline
+\multicolumn{9}{|c|}{\textbf{Cell Features in A Series}} \\
+\hline
+\textbf{Cells} & \textbf{Average Area} & \textbf{Perimeter} & \textbf{Average Roundness} & \textbf{Mean Intensity} & \textbf{Average Standard Deviation} & \textbf{Average Smoothness} & \textbf{Average Velocity} & \textbf{Average Distance} \\
+\hline
+\textbf{Cell 1} & 681.38 & 8548.72 & 128.08 & 23481.72 & 681.38 & 0.99 & 0.0684 & 8.205 \\
+\textbf{Cell 2} & 953.28 & 8034.45 & 128.33 & 21312.41 & 953.31 & 0.99 & 0.0727 & 8.728 \\
+\textbf{Cell 3} & 965.24 & 7834.79 & 134.13 & 21193.45 & 965.76 & 0.99 & 0.0557 & 6.685 \\
+\textbf{Cell 4} & 887.34 & 8161.00 & 117.99 & 21281.72 & 887.34 & 0.99 & 0.1717 & 20.605 \\
+\textbf{Cell 5} & 871.72 & 6328.86 & 121.35 & 18226.55 & 872.00 & 0.99 & 0.0696 & 8.36 \\
+\textbf{Cell 6} & 1217.69 & 6137.69 & 166.84 & 17727.28 & 1218.03 & 0.99 & 0.0791 & 9.492 \\
+\textbf{Cell 7} & 1039.83 & 6217.72 & 143.28 & 17879.31 & 1040.03 & 0.99 & 0.0862 & 10.34 \\
+\textbf{Cell 8} & 1039.83 & 6217.72 & 143.28 & 17879.31 & 1040.03 & 0.99 & 0.0641 & 7.693 \\
+\textbf{Cell 9} & 2277.59 & 3895.48 & 227.32 & 15520.34 & 2305.00 & 0.99 & 0.0889 & 10.68 \\
+\textbf{Cell 10} & 5150.62 & 5740.38 & 485.59 & 17210.34 & 5312.45 & 0.99 & 0.0644 & 7.723 \\
+\textbf{Cell 11} & 747.55 & 3208.52 & 110.24 & 14301.38 & 748.83 & 0.99 & 0.0568 & 6.823 \\
+\textbf{Cell 12} & 635.62 & 4784.07 & 98.96 & 16984.14 & 635.62 & 0.99 & 0.0898 & 10.776 \\
+\textbf{Cell 13} & 750.14 & 5769.72 & 108.39 & 18252.76 & 750.24 & 0.99 & 0.0399 & 4.793 \\
+\textbf{Cell 14} & 732.97 & 7609.90 & 106.96 & 20932.76 & 733.03 & 0.99 & 0.0529 & 6.349 \\
+\textbf{Cell 15} & 387.24 & 3793.31 & 54.57 & 14664.62 & 387.38 & 0.99 & 0.0419 & 5.035 \\
+\hline
+\end{tabular}
+\caption{Uniformity of the Image}\label{table:Uniformity}
+\end{table}
+
+\clearpage
+
+\subsection*{Cell Velocity and Distance Trajectory}
+
+The differences in cell velocity and distance trajectory can be seen in the graphs in figures 2 and 3. From the graphs it is visible that average distance and average velocity is more stochastic in the growth series than in the control series. This shows that cells in the growth series tend to be more active, erratic and spontaneous in their movements than cells in the control series. 
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/mean_distance_g_and_c.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average distance travelled by each cell in series C and G.}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/mean_velocity_g_and_c.png}
+\caption{\label{fig:Mean_Velocity}The image shows the average velocity of each cell in series C and G.}
+\end{figure}
+
+
+
+\begin{landscape} % Begin the landscape environment
+\begin{table}[htbp]
+\centering
+\caption{Velocity Changes for Cells in Series A }
+\label{tab:velocity_changes}
+\begin{tabular}{lrrrrrrrrrrrrrrrr}
+\toprule
+ & \textbf{Cell 1} & \textbf{Cell 2} & \textbf{Cell 3} & \textbf{Cell 4} & \textbf{Cell 5} & \textbf{Cell 6} & \textbf{Cell 7} & \textbf{Cell 8} & \textbf{Cell 9} & \textbf{Cell 10} & \textbf{Cell 11} & \textbf{Cell 12} & \textbf{Cell 13} & \textbf{Cell 14} & \textbf{Cell 15} \\
+\midrule
+0 & 0.08021 & 0.10277 & 0.01592 & 0.43677 & 0.06172 & 0.08417 & 0.49350 & 0.08271 & 0.00672 & 0.14188 & 0.25131 & 0.32826 & 0.03553 & 0.02522 & 0.05498 \\
+1 & 0.15911 & 0.10512 & 0.03661 & 0.18897 & 0.03631 & 0.05966 & 0.10512 & 0.11717 & 0.01978 & 0.02458 & 0.13477 & 0.05132 & 0.02591 & 0.11095 & 0.07552 \\
+2 & 0.04718 & 0.04510 & 0.22998 & 0.15417 & 0.16094 & 0.07674 & 0.04510 & 0.10612 & 0.28668 & 0.00895 & 0.33472 & 0.00201 & 0.13292 & 0.06001 & 0.02774 \\
+3 & 0.02347 & 0.03845 & 0.14805 & 0.30562 & 0.09467 & 0.14613 & 0.03845 & 0.01158 & 0.02782 & 0.04004 & 0.02305 & 0.07188 & 0.02173 & 0.03906 & 0.01945 \\
+4 & 0.06194 & 0.01509 & 0.13578 & 0.35432 & 0.12198 & 0.07331 & 0.01509 & 0.12846 & 0.04656 & 0.17861 & 0.02311 & 0.11739 & 0.10885 & 0.09025 & 0.02335 \\
+5 & 0.60137 & 0.29489 & 0.03952 & 0.15137 & 0.03618 & 0.26614 & 0.29489 & 0.13331 & 0.06076 & 0.07091 & 0.03250 & 0.02792 & 0.03348 & 0.01642 & 0.02014 \\
+6 & 0.05090 & 0.14800 & 0.05090 & 0.30312 & 0.14800 & 0.31199 & 0.14800 & 0.11011 & 0.16090 & 0.01877 & 0.01718 & 0.01225 & 0.00224 & 0.05752 & 0.03516 \\
+7 & 0.00932 & 0.08763 & 0.00932 & 0.28166 & 0.08763 & 0.03371 & 0.08763 & 0.25386 & 0.18673 & 0.07035 & 0.03984 & 0.01254 & 0.04368 & 0.11627 & 0.00838 \\
+8 & 0.01121 & 0.30776 & 0.01121 & 0.29259 & 0.30776 & 0.07769 & 0.30776 & 0.11626 & 0.25842 & 0.10218 & 0.13718 & 0.00903 & 0.03001 & 0.02360 & 0.01828 \\
+9 & 0.04180 & 0.10305 & 0.04180 & 0.10893 & 0.10305 & 0.05045 & 0.10305 & 0.08369 & 0.26572 & 0.10857 & 0.02693 & 0.01670 & 0.09499 & 0.12260 & 0.01424 \\
+10 & 0.04859 & 0.20163 & 0.04859 & 0.06850 & 0.20163 & 0.05942 & 0.20163 & 0.08602 & 0.20100 & 0.06396 & 0.01502 & 0.00645 & 0.00820 & 0.03384 & 0.18595 \\
+11 & 0.02452 & 0.15453 & 0.02452 & 0.15146 & 0.15453 & 0.02915 & 0.15453 & 0.18241 & 0.12045 & 0.06093 & 0.01272 & 0.03413 & 0.01756 & 0.03250 & 0.01618 \\
+12 & 0.03918 & 0.00972 & 0.03918 & 0.16908 & 0.00972 & 0.06526 & 0.00972 & 0.06758 & 0.11073 & 0.10500 & 0.01828 & 0.01744 & 0.03439 & 0.04957 & 0.04180 \\
+13 & 0.01752 & 0.02430 & 0.01752 & 0.07556 & 0.02430 & 0.33009 & 0.02430 & 0.03599 & 0.10355 & 0.22073 & 0.22785 & 0.18192 & 0.04504 & 0.07463 & 0.02422 \\
+14 & 0.06120 & 0.07775 & 0.06120 & 0.03436 & 0.07775 & 0.06425 & 0.07775 & 0.05007 & 0.14029 & 0.01044 & 0.03481 & 0.22430 & 0.02918 & 0.08590 & 0.05412 \\
+15 & 0.05421 & 0.03906 & 0.05421 & 0.15406 & 0.03906 & 0.05540 & 0.03906 & 0.10331 & 0.01758 & 0.00501 & 0.01544 & 0.03837 & 0.02750 & 0.03801 & 0.02317 \\
+16 & 0.01945 & 0.03563 & 0.01945 & 0.18303 & 0.03563 & 0.05336 & 0.03563 & 0.00786 & 0.04770 & 0.03824 & 0.02175 & 0.50677 & 0.02354 & 0.04776 & 0.00373 \\
+17 & 0.03275 & 0.01419 & 0.03275 & 0.02855 & 0.01419 & 0.03553 & 0.01419 & 0.00850 & 0.11844 & 0.03937 & 0.01286 & 0.17620 & 0.06969 & 0.09676 & 0.16863 \\
+18 & 0.01718 & 0.02585 & 0.01718 & 0.34162 & 0.02585 & 0.03713 & 0.02585 & 0.02202 & 0.02348 & 0.03875 & 0.03862 & 0.30271 & 0.03717 & 0.03288 & 0.07060 \\
+19 & 0.01419 & 0.00755 & 0.01419 & 0.33676 & 0.00755 & 0.04327 & 0.00755 & 0.00607 & 0.02844 & 0.04700 & 0.00233 & 0.03925 & 0.02754 & 0.07546 & 0.07005 \\
+20 & 0.02844 & 0.00712 & 0.02844 & 0.15072 & 0.00712 & 0.02427 & 0.00712 & 0.01654 & 0.02583 & 0.02075 & 0.05867 & 0.02900 & 0.01283 & 0.03167 & 0.03608 \\
+21 & 0.02981 & 0.00301 & 0.02981 & 0.04631 & 0.00301 & 0.01336 & 0.00301 & 0.01419 & 0.05277 & 0.03217 & 0.02713 & 0.04851 & 0.05132 & 0.03823 & 0.03267 \\
+22 & 0.22059 & 0.03538 & 0.22059 & 0.43289 & 0.03538 & 0.02164 & 0.03538 & 0.01193 & 0.03030 & 0.13058 & 0.01474 & 0.20572 & 0.02923 & 0.03918 & 0.04125 \\
+23 & 0.16974 & 0.03173 & 0.16974 & 0.08552 & 0.03173 & 0.04225 & 0.03173 & 0.00486 & 0.02603 & 0.16974 & 0.02143 & 0.00656 & 0.05656 & 0.04995 & 0.00333 \\
+24 & 0.02111 & 0.01886 & 0.02111 & 0.03085 & 0.01886 & 0.03426 & 0.01886 & 0.02583 & 0.01782 & 0.02111 & 0.03918 & 0.01093 & 0.01235 & 0.02276 & 0.05117 \\
+25 & 0.04177 & 0.07752 & 0.04177 & 0.02219 & 0.07752 & 0.06623 & 0.07752 & 0.02501 & 0.04337 & 0.04177 & 0.02574 & 0.03925 & 0.05815 & 0.02556 & 0.01179 \\
+26 & 0.02052 & 0.02668 & 0.02052 & 0.03330 & 0.02668 & 0.04568 & 0.02668 & 0.02359 & 0.01835 & 0.02052 & 0.01193 & 0.01037 & 0.02860 & 0.04174 & 0.05037 \\
+27 & 0.01495 & 0.03020 & 0.01495 & 0.04485 & 0.03020 & 0.06205 & 0.03020 & 0.01318 & 0.01379 & 0.01495 & 0.01944 & 0.05151 & 0.01458 & 0.03194 & 0.01031 \\
+28 & 0.02065 & 0.04063 & 0.02065 & 0.01253 & 0.04063 & 0.03133 & 0.04063 & 0.01087 & 0.12075 & 0.02065 & 0.01044 & 0.02546 & 0.04562 & 0.02417 & 0.02422 \\
+\textbf{Average} & 0.0684 & 0.0727 & 0.0557 & 0.1717 & 0.0696 & 0.0791 & 0.0862 & 0.0641 & 0.0889 & 0.0644 & 0.0568 & 0.0898 & 0.0399 & 0.0529 & 0.0419\\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{landscape}
+
+
+
+
+\begin{landscape}
+\begin{table}[htbp]
+\centering
+\caption{Velocity Changes for Cells in Series B}
+\begin{tabular}{lrrrrrrrrrrrrrrrr}
+\toprule
+ & Cell 1 & Cell 2 & Cell 3 & Cell 4 & Cell 5 & Cell 6 & Cell 7 & Cell 8 & Cell 9 & Cell 10 & Cell 11 & Cell 12 & Cell 13 & Cell 14 & Cell 15 & Average \\
+\midrule
+Change 1 & 0.042704 & 0.135324 & 0.123615 & 0.063355 & 0.118336 & 0.100671 & 0.031678 & 0.103320 & 0.068333 & 0.205818 & 0.065474 & 0.133200 & 0.120868 & 0.132112 & 0.139207 & 0.101641 \\
+Change 2 & 0.078120 & 0.108141 & 0.044033 & 0.129349 & 0.216131 & 0.095510 & 0.136056 & 0.030026 & 0.038415 & 0.013566 & 0.023046 & 0.048088 & 0.114906 & 0.104037 & 0.236069 & 0.091242 \\
+Change 3 & 0.128033 & 0.128625 & 0.113382 & 0.071841 & 0.107707 & 0.018276 & 0.043605 & 0.011963 & 0.044799 & 0.140633 & 0.086610 & 0.067910 & 0.158684 & 0.107707 & 0.208041 & 0.094640 \\
+Change 4 & 0.125858 & 0.072275 & 0.047973 & 0.044386 & 0.103528 & 0.015023 & 0.195334 & 0.159654 & 0.022638 & 0.158327 & 0.053033 & 0.225039 & 0.256500 & 0.103528 & 0.096336 & 0.108903 \\
+Change 5 & 0.084623 & 0.179973 & 0.115980 & 0.173945 & 0.146368 & 0.116812 & 0.066165 & 0.102034 & 0.088416 & 0.066999 & 0.053924 & 0.131183 & 0.066165 & 0.146368 & 0.032425 & 0.111676 \\
+Change 6 & 0.172079 & 0.162944 & 0.129384 & 0.030833 & 0.151667 & 0.122842 & 0.039229 & 0.033924 & 0.121635 & 0.151667 & 0.099775 & 0.184174 & 0.039229 & 0.151667 & 0.050173 & 0.110929 \\
+Change 7 & 0.233357 & 0.108449 & 0.177279 & 0.094612 & 0.163728 & 0.030935 & 0.223689 & 0.037006 & 0.129770 & 0.163728 & 0.056457 & 0.149815 & 0.223689 & 0.163728 & 0.127837 & 0.131882 \\
+Change 8 & 0.169863 & 0.164581 & 0.131891 & 0.130067 & 0.219888 & 0.103615 & 0.058178 & 0.123475 & 0.036334 & 0.219888 & 0.070244 & 0.189145 & 0.058178 & 0.219888 & 0.156687 & 0.134885 \\
+Change 9 & 0.115302 & 0.250547 & 0.009014 & 0.009014 & 0.178252 & 0.049018 & 0.130035 & 0.054804 & 0.020883 & 0.178252 & 0.025310 & 0.153971 & 0.130035 & 0.178252 & 0.139893 & 0.104869 \\
+Change 10 & 0.057039 & 0.167856 & 0.183863 & 0.183863 & 0.118051 & 0.151969 & 0.268984 & 0.141276 & 0.117100 & 0.118051 & 0.135887 & 0.199280 & 0.268984 & 0.118051 & 0.118051 & 0.154834 \\
+Change 11 & 0.053781 & 0.057185 & 0.136667 & 0.136667 & 0.179184 & 0.108753 & 0.149159 & 0.022784 & 0.122011 & 0.179184 & 0.021874 & 0.085216 & 0.149159 & 0.179184 & 0.179184 & 0.106304 \\
+Change 12 & 0.099177 & 0.120937 & 0.137032 & 0.137032 & 0.126765 & 0.036173 & 0.190049 & 0.225309 & 0.152746 & 0.126765 & 0.064393 & 0.142132 & 0.190049 & 0.126765 & 0.126765 & 0.129958 \\
+Change 13 & 0.143299 & 0.153824 & 0.173512 & 0.173512 & 0.166009 & 0.229109 & 0.042114 & 0.123624 & 0.066797 & 0.166009 & 0.010934 & 0.080506 & 0.042114 & 0.166009 & 0.166009 & 0.125707 \\
+Change 14 & 0.095281 & 0.054823 & 0.159865 & 0.159865 & 0.076748 & 0.148948 & 0.119240 & 0.091249 & 0.090925 & 0.076748 & 0.113260 & 0.066510 & 0.119240 & 0.076748 & 0.076748 & 0.099506 \\
+Change 15 & 0.133380 & 0.081326 & 0.177680 & 0.177680 & 0.093244 & 0.032869 & 0.184599 & 0.076173 & 0.065245 & 0.093244 & 0.086800 & 0.177077 & 0.184599 & 0.093244 & 0.093244 & 0.117753 \\
+Change 16 & 0.150289 & 0.164507 & 0.111943 & 0.111943 & 0.044292 & 0.209333 & 0.093426 & 0.055924 & 0.180693 & 0.044292 & 0.016767 & 0.107716 & 0.093426 & 0.044292 & 0.044292 & 0.097269 \\
+Change 17 & 0.144458 & 0.271725 & 0.132238 & 0.132238 & 0.050532 & 0.112305 & 0.125347 & 0.334265 & 0.207261 & 0.050532 & 0.006960 & 0.218104 & 0.125347 & 0.050532 & 0.050532 & 0.141990 \\
+Change 18 & 0.078338 & 0.094707 & 0.258597 & 0.258597 & 0.078462 & 0.221135 & 0.089334 & 0.093188 & 0.121037 & 0.078462 & 0.040646 & 0.168426 & 0.089334 & 0.078462 & 0.078462 & 0.128107 \\
+Change 19 & 0.182003 & 0.199654 & 0.146936 & 0.146936 & 0.061129 & 0.178577 & 0.127088 & 0.123890 & 0.204138 & 0.061129 & 0.041474 & 0.193139 & 0.127088 & 0.061129 & 0.061129 & 0.133442 \\
+Change 20 & 0.158616 & 0.172556 & 0.120257 & 0.120257 & 0.200693 & 0.237139 & 0.093634 & 0.172400 & 0.126768 & 0.200693 & 0.008043 & 0.198046 & 0.093634 & 0.200693 & 0.200693 & 0.149023 \\
+Change 21 & 0.253904 & 0.098407 & 0.104193 & 0.104193 & 0.126834 & 0.209364 & 0.163233 & 0.118185 & 0.159313 & 0.126834 & 0.011769 & 0.131930 & 0.163233 & 0.126834 & 0.126834 & 0.136943 \\
+Change 22 & 0.205935 & 0.107245 & 0.179668 & 0.179668 & 0.071889 & 0.122046 & 0.064560 & 0.188146 & 0.101414 & 0.071889 & 0.004083 & 0.108985 & 0.064560 & 0.071889 & 0.071889 & 0.111945 \\
+Change 23 & 0.138644 & 0.102909 & 0.218488 & 0.218488 & 0.156269 & 0.102147 & 0.038042 & 0.186863 & 0.023717 & 0.156269 & 0.005918 & 0.204015 & 0.038042 & 0.156269 & 0.156269 & 0.119389 \\
+Change 24 & 0.063792 & 0.152612 & 0.164739 & 0.164739 & 0.089540 & 0.121912 & 0.063667 & 0.137773 & 0.174901 & 0.089540 & 0.022621 & 0.239584 & 0.063667 & 0.089540 & 0.089540 & 0.120922 \\
+Change 25 & 0.056746 & 0.208073 & 0.183335 & 0.183335 & 0.024224 & 0.122602 & 0.057215 & 0.092312 & 0.183371 & 0.024224 & 0.005025 & 0.065192 & 0.057215 & 0.024224 & 0.024224 & 0.092447 \\
+Change 26 & 0.076126 & 0.113444 & 0.099107 & 0.099107 & 0.051908 & 0.116157 & 0.122783 & 0.114676 & 0.045856 & 0.051908 & 0.008069 & 0.116696 & 0.122783 & 0.051908 & 0.051908 & 0.079674 \\
+Change 27 & 0.230663 & 0.101242 & 0.132062 & 0.132062 & 0.058310 & 0.036000 & 0.130948 & 0.087623 & 0.232215 & 0.058310 & 0.002083 & 0.289696 & 0.130948 & 0.058310 & 0.058310 & 0.118654 \\
+Change 28 & 0.161342 & 0.157852 & 0.187620 & 0.187620 & 0.045590 & 0.074740 & 0.068903 & 0.064637 & 0.159663 & 0.045590 & 0.005233 & 0.134536 & 0.068903 & 0.045590 & 0.045590 & 0.105226 \\
+Change 29 & 0.139396 & 0.235391 & 0.215526 & 0.215526 & 0.022669 & 0.505636 & 0.124981 & 0.154290 & 0.173159 & 0.022669 & 0.011574 & 0.028382 & 0.124981 & 0.022669 & 0.022669 & 0.155253 \\
+Average & 0.1301 & 0.1423 & 0.1419 & 0.1369 & 0.1119 & 0.1286 & 0.1117 & 0.1124 & 0.1131 & 0.1083 & 0.0399 & 0.1461 & 0.1202 & 0.1086 & 0.1044 & 0.1163 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{landscape}
+
+\subsection*{Differences in Trajectory}
+The trajectories of the cells in both series were plotted and the figures are attached in the Appendix (figures \ref{fig:Trajectory-ControlSeries-1-4}, \ref{fig:Trajectory-ControlSeries-5-8}, \ref{fig:Trajectory-ControlSeries-9-12} and \ref{fig:Trajectory-ControlSeries-13-15})
+
+The difference in trajectories of the Control Series are tabulated below. 
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{ |p{3cm}||p{3cm}|p{3cm}|  }
+     \hline Frames & Differences in x-direction & Difference in y-direction\\
+ \hline 
+$1 \rightarrow 2$ &170.1 & 3.80000000000001\\
+$2 \rightarrow 3$ &241.1 & 31.4\\
+$3 \rightarrow 4$ &201.4 & 143.4\\
+$4 \rightarrow 5$ &1218.3 & 1117.9\\
+$5 \rightarrow 6$ &1147.6 & 1060.4\\
+$6 \rightarrow 7$ &1378.1 & 1383.9\\
+$7 \rightarrow 8$ &4818.9 & 356.600000000003\\
+$8 \rightarrow 9$ &6133.92 & 1061.91\\
+$9 \rightarrow 10$ &1007.82 & 2476.74\\
+$10 \rightarrow 11$ &1898.29999999999 & 356.130000000001\\
+$11 \rightarrow 12$ &354.049999999999 & 421.600000000003\\
+$12 \rightarrow 13$ &246.550000000002 & 95.4300000000021\\
+$13 \rightarrow 14$ &753.199999999998 & 975.970000000004\\
+ \hline
+    \end{tabular}
+    \caption{Uniformity of the Series}
+    \label{tab:Uniformity_Series}
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{ |p{3cm}||p{3cm}|p{3cm}|  }
+     \hline Frames & Differences in x-direction & Difference in y-direction\\
+ \hline 
+$1 \rightarrow 2$ &16.5999999999999 & 55.6999999999999\\
+$2 \rightarrow 3$ &83.1 & 87.6999999999999\\
+$3 \rightarrow 4$ &38.1 & 32\\
+$4 \rightarrow 5$ &94.5999999999999 & 70.5\\
+$5 \rightarrow 6$ &165 & 247.7\\
+$6 \rightarrow 7$ &257.6 & 133.6\\
+$7 \rightarrow 8$ &244.6 & 229.66\\
+$8 \rightarrow 9$ &42.3999999999999 & 152.56\\
+$9 \rightarrow 10$ &246.799999999999 & 157.899999999999\\
+$10 \rightarrow 11$ &111.86 & 131.2\\
+$11 \rightarrow 12$ &227.859999999999 & 23.6999999999999\\
+$12 \rightarrow 13$ &181.7 & 206.799999999999\\
+$13 \rightarrow 14$ &18.4999999999999 & 99.9999999999999\\
+\hline
+    \end{tabular}
+    \caption{Uniformity of the Series}
+    \label{tab:Uniformity_Series}
+\end{table}
+
+\newpage
+\subsection*{Differences in Conditions}
+From the figures 5 to 8 we can see that apart from some stochastic randomness in cells 9 and 10 in the control series, the difference in in average roundness, smoothness and average standard deviation are slight. However, differences between the control and growth series are more prominent in terms of average intensity and average perimeter of cells. It is clear from the graphs that differences in mean intensity, area and periemter are much more stark with cells in the growth series having a rising trend of mean intensity and perimeter and cells in the control series having falling trends in these features. 
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/average_mean_1.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average mean intensity of each cell in series C and G.}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/average_area.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average mean intensity of each cell in series C and G.}
+\end{figure}
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/average_perimeter_1.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average perimeter of each cell in series C and G.}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/average_roundness_1.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average roundness of each cell in series C and G.}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/average_smoothness_1.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average smoothness of each cell in series C and G.}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/average_standard_deviation.png}
+\caption{\label{fig:Mean_Distance}The image shows the progression of average standard deviation of each cell in series C and G.}
+\end{figure}
+\clearpage
+
+\subsection*{Correlation between speed with shape and texture}
+
+As seen in the figures 11 and 12 the relationship between speed and size of cells is generally inverse, a bigger cell often moves slower. It is important to note however that this relationship is derived from the curve and in real life there are exceptions. We can see this with points that deviate far from the fitted line for which bigger size doesnt necessarily equal lower velocity. However, it is safe to say that in general size has an effect on velocity of cells. 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/relationship_c.png}
+\caption{\label{fig:Mean_Distance}The image shows the relationship between average area of cells and average velocities for series C (control series).}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/relationship_g.png}
+\caption{\label{fig:Mean_Distance}The image shows the relationship between average area of cells and average velocities for series G (growth series).}
+\end{figure}
+\clearpage
+\newpage
+
+Looking at figures 13 and 14, it is clear that there is a correlation between roundness and velocity. As seen in the figures, for both the control and growth series, a higher average roundness of cells corresponds to lower average velocity. This may be because a rounder shape indicates more resistance experienced by the cell when moving through fluid environments from other micro-organisms and less ability to push through smaller areas. For instance, cells with a more elongated shape might experience less resistance in comparison to rounder cells as they move through fluid environments.
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/relation_c.png}
+\caption{\label{fig:Mean_Distance}The image shows the relationship between average roundness of cells and average velocities for series C (control series).}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/relation_g.png}
+\caption{\label{fig:Mean_Distance}The image shows the relationship between average roundness of cells and average velocities for series G (growth series).}
+\end{figure}
+\clearpage
+\newpage
+
+From the figures 15 and 16 it is obvious that cell smoothness might not have a very strong relationship with velocity but it might has a certain effect. Higher smoothness of cells make them faster as it reduces friction arising from movement and smoother cells are also less likely to combine with other cells and enzymes while traveling. 
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/relationship_s.png}
+\caption{\label{fig:Mean_Distance}The image shows the relationship between average smoothness of cells and average velocities for series C (control series).}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Graphs/relationship_s_g.png}
+\caption{\label{fig:Mean_Distance}The image shows the relationship between average smoothness of cells and average velocities for series G (growth series).}
+\end{figure}
+\clearpage
+\subsubsection*{Image Quality and Image Resolution}
+The following table contains the comparison of the quality and resolution of the images in both series. 
+
+\begin{table}[h!]
+\centering
+\caption{Summary of Image Quality and Resolution}\label{table:Quality-Resolution}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\textbf{Image}}&\multicolumn{2}{|c|}{\textbf{Control Series - A}}&\multicolumn{2}{|c|}{\textbf{Growth Series - B}}\\ 
+\cline{2-5}
+& \textbf{Size} & \textbf{Resolution} & \textbf{Size} & \textbf{Resolution} \\
+\hline
+\textbf{Image 1} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 2} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 3} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 4} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 5} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 6} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 7} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 8} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 9} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 10} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 11} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 12} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 13} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 14} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 15} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 16} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 17} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 18} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 19} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 20} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 21} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 22} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 23} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 24} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 25} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 26} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 27} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 28} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 29} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\textbf{Image 30} & [512, 512] & {inf fm} & [512, 512] & {inf fm} \\
+\hline
+\end{tabular}
+\end{table}
+All the images are [512,512] in size and have a pixel size of {inf fm}, as these are a time-lapsed series of images gathered from microscope. 
+\newpage
+\section*{Appendix 1}
+\subsection*{Question 4.1}
+\subsubsection*{Segmentation and Tracing of the Cells}
+The following images were obtained after morphological operations and labeling were performed on the original set of images in Control Series. 
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_1.png}
+    \caption*{Frame 1 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_2.png}
+    \caption*{Frame 2 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_3.png}
+    \caption*{Frame 3 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_4.png}
+    \caption*{Frame 4 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_5.png}
+    \caption*{Frame 5 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_6.png}
+    \caption*{Frame 6 after Segmentation}
+  \end{subfigure}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_7.png}
+    \caption*{Frame 7 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_8.png}
+    \caption*{Frame 8 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_9.png}
+    \caption*{Frame 9 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_10.png}
+    \caption*{Frame 10 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_11.png}
+    \caption*{Frame 11 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_12.png}
+    \caption*{Frame 12 after Segmentation}
+  \end{subfigure}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_13.png}
+    \caption*{Frame 13 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_14.png}
+    \caption*{Frame 14 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_15.png}
+    \caption*{Frame 15 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_16.png}
+    \caption*{Frame 16 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_17.png}
+    \caption*{Frame 17 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_18.png}
+    \caption*{Frame 18 after Segmentation}
+  \end{subfigure}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_19.png}
+    \caption*{Frame 19 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_20.png}
+    \caption*{Frame 20 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_21.png}
+    \caption*{Frame 21 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_22.png}
+    \caption*{Frame 22 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_23.png}
+    \caption*{Frame 23 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_24.png}
+    \caption*{Frame 24 after Segmentation}
+  \end{subfigure}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_25.png}
+    \caption*{Frame 25 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_26.png}
+    \caption*{Frame 26 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_27.png}
+    \caption*{Frame 27 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_28.png}
+    \caption*{Frame 28 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_29.png}
+    \caption*{Frame 29 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-A-Control/frame_30.png}
+    \caption*{Frame 30 after Segmentation}
+  \end{subfigure}
+\end{figure}
+\clearpage
+
+The following images were obtained after morphological operations and labeling were performed on the original set of images in Growth Series. 
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_1.png}
+    \caption*{Frame 1 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_2.png}
+    \caption*{Frame 2 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_3.png}
+    \caption*{Frame 3 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_4.png}
+    \caption*{Frame 4 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_5.png}
+    \caption*{Frame 5 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_6.png}
+    \caption*{Frame 6 after Segmentation}
+  \end{subfigure}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_7.png}
+    \caption*{Frame 7 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_8.png}
+    \caption*{Frame 8 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_9.png}
+    \caption*{Frame 9 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_10.png}
+    \caption*{Frame 10 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_11.png}
+    \caption*{Frame 11 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_12.png}
+    \caption*{Frame 12 after Segmentation}
+  \end{subfigure}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_13.png}
+    \caption*{Frame 13 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_14.png}
+    \caption*{Frame 14 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_15.png}
+    \caption*{Frame 15 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_16.png}
+    \caption*{Frame 16 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_17.png}
+    \caption*{Frame 17 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_18.png}
+    \caption*{Frame 18 after Segmentation}
+  \end{subfigure}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_19.png}
+    \caption*{Frame 19 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_20.png}
+    \caption*{Frame 20 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_21.png}
+    \caption*{Frame 21 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_22.png}
+    \caption*{Frame 22 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_23.png}
+    \caption*{Frame 23 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_24.png}
+    \caption*{Frame 24 after Segmentation}
+  \end{subfigure}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_25.png}
+    \caption*{Frame 25 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_26.png}
+    \caption*{Frame 26 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_27.png}
+    \caption*{Frame 27 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_28.png}
+    \caption*{Frame 28 after Segmentation}
+  \end{subfigure}
+
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_29.png}
+    \caption*{Frame 29 after Segmentation}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \includegraphics[width=\linewidth]{Report/Appendix_Images/Segmentation-B-Growth/frame_30.png}
+    \caption*{Frame 30 after Segmentation}
+  \end{subfigure}
+\end{figure}
+\clearpage
+\subsubsection*{Algorithm - Results}
+The following set of images contain the tracing of the algorithm with the fifteen chosen cells, across the series of images in Control Series. 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\linewidth]{Report/RImages/Traces_Control/image_1a.png}
+\includegraphics[width=0.7\linewidth]{Report/RImages/Traces_Control/image_2a.png}
+\includegraphics[width=0.7\linewidth]{Report/RImages/Traces_Control/image_3a.png}
+\includegraphics[width=0.7\linewidth]{Report/RImages/Traces_Control/image_4a.png}
+\end{figure}
+\clearpage
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_5a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_6a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_7a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_8a.png}
+\end{figure}
+\clearpage
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_9a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_10a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_11a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_12a.png}
+\end{figure}
+\clearpage
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_13a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_14a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_15a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_16a.png}
+\end{figure}
+\clearpage
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_17a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_18a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_19a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_20a.png}
+\end{figure}
+\clearpage
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_21a.png}
+\includegraphics[width=0.75\linewidth]
+{Report/RImages/Traces_Control/image_22a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_23a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_24a.png}
+\end{figure}
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_25a.png}
+\includegraphics[width=0.75\linewidth]
+{Report/RImages/Traces_Control/image_26a.png}
+\includegraphics[width=0.75\linewidth]
+{Report/RImages/Traces_Control/image_27a.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_28a.png}
+\end{figure}
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Control/image_29a.png}
+\end{figure}
+The following set of images contain the tracing of the algorithm with the fifteen chosen cells, across the series of images in Growth Series. 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b1.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b2.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b3.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b4.png}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b9.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b10.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b11.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b12.png}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b13.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b14.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b15.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b16.png}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b17.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b18.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b19.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b20.png}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b21.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b22.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b23.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b24.png}
+\end{figure}
+
+\clearpage
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b25.png}
+\includegraphics[width=0.75\linewidth]
+{Report/RImages/Traces_Growth/trace-b26.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b27.png}
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b28.png}
+\end{figure}
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.75\linewidth]{Report/RImages/Traces_Growth/trace-b29.png}
+\end{figure}
+
+\newpage
+\section*{Question 4.2}
+\subsubsection*{Cell Trajectory}
+The following series of images plots the movement of the cells of interest, across the 30 frames. The x- and y-axes vary for each cell based on the movement of the cell. Keeping the axes constant would have made it difficult for the cell trajectory to be clearly visible. 
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_1.png}       
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_2.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_3.png}    
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_4.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 1 to 4 over 30 frames in Series A}
+    \label{fig:Trajectory-ControlSeries-1-4}
+\end{figure}
+
+\clearpage
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_5.png}       
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_6.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_7.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_8.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 5 to 8 over 30 frames in Series A}
+    \label{fig:Trajectory-ControlSeries-5-8}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_9.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_10.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_11.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_12.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 9 to 12 over 30 frames in Series A}
+    \label{fig:Trajectory-ControlSeries-9-12}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_13.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_14.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-A-Control/trajectory_15.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 13 to 15 over 30 frames in Series A}
+    \label{fig:Trajectory-ControlSeries-13-15}
+\end{figure}
+
+Similarly, the following series of images plots the movement of the cells of interest, across the 30 frames in Growth Series. The x- and y-axes vary for each cell based on the movement of the cell. 
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_1.png}       
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_2.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_3.png}    
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_4.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 1 to 4 over 30 frames in Series B-Growth}
+    \label{fig:Trajectory-GrowthSeries-1-4}
+\end{figure}
+
+\clearpage
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_5.png}       
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_6.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_7.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_8.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 5 to 8 over 30 frames in Series B-Growth}
+    \label{fig:Trajectory-GrowthSeries-5-8}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_9.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_10.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_11.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_12.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 9 to 12 over 30 frames in Series B-Growth}
+    \label{fig:Trajectory-GrowthSeries-9-12}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_13.png}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_14.png}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{Report/Appendix_Images/Trajectory-B-Growth/trajectory_15.png}
+    \end{subfigure}
+    \caption{The image shows the trajectory of cells 13 to 15 over 30 frames in Series B-Growth}
+    \label{fig:Trajectory-GrowthSeries-13-15}
+\end{figure}
+
+\end{document}
