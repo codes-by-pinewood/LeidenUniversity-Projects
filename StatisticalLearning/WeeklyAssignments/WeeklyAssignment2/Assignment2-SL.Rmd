@@ -1,0 +1,586 @@
+---
+title: 'Assigment 2: Statistical Learning'
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-05-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(mgcv)
+library(splines)
+library(gam)
+library(corrplot)
+library("e1071")
+library(GGally)
+library(gbm)
+library(caret)
+library(MLmetrics)
+library(xgboost)
+library(caTools)
+library(dplyr)
+library(caret)
+
+
+
+MH_dat <- read.table("../MHpredict.csv", sep=",", header=TRUE, stringsAsFactors = TRUE)
+set.seed(4168216)
+
+test <- sample(1:nrow(MH_dat), 500)
+train = which(!(1:nrow(MH_dat) %in% test))
+
+```
+Before we proceed with GAMS we should plot the data first. 
+
+
+```{r}
+vars <- c("dep_sev_fu", "Age", "aedu", "IDS", "BAI", "FQ", "AO")
+ggpairs(MH_dat[,vars] )
+```
+
+
+```{r}
+library(lmtest)
+library(ggpubr)
+
+ggpubr::ggscatter(MH_dat, x = "BAI", y = "dep_sev_fu", 
+                  add = "loess", conf.int = TRUE, 
+                  cor.coef = TRUE, cor.method = "pearson",
+                  xlab = "BAI", ylab = "dep_sev_fu")
+
+ggpubr::ggscatter(MH_dat, x = "IDS", y = "dep_sev_fu", 
+          add = "loess", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "IDS", ylab = "dep_sev_fu")
+
+ggpubr::ggscatter(MH_dat, x = "aedu", y = "dep_sev_fu", 
+          add = "loess", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "aedu", ylab = "dep_sev_fu")
+
+ggpubr::ggscatter(MH_dat, x = "FQ", y = "dep_sev_fu", 
+          add = "loess", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "FQ", ylab = "dep_sev_fu")
+
+ggpubr::ggscatter(MH_dat, x = "Age", y = "dep_sev_fu", 
+          add = "loess", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Age", ylab = "dep_sev_fu")
+
+ggpubr::ggscatter(MH_dat, x = "AO", y = "dep_sev_fu", 
+          add = "loess", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "AO", ylab = "dep_sev_fu")
+```
+
+From a correlation plot we can see that BAI, FQ and AO are most heavily skewed. We can see that the IDS is normally distributed. 
+
+
+## Support Vector Machines (SVM)
+
+### Linear Kernel 
+```{r, echo=FALSE}
+cost <- c(0.0001, 0.001, 0.01, 0.1, 1)
+epsilon <- c(0.0001, 0.001, 0.01, 0.1, 1)
+tune.out<- tune(svm, dep_sev_fu  ~., data = MH_dat[train, ], kernel="linear", ranges= list(cost=cost, epsilon = epsilon))
+
+```
+
+
+```{r}
+optimal_vals <- tune.out$best.parameters
+svmfit_linear <- svm(dep_sev_fu ~., data = MH_dat[train,], kernel ="linear", 
+              epsilon= optimal_vals$epsilon, 
+              cost = optimal_vals$cost)
+```
+
+
+```{r}
+
+pred=predict(svmfit_linear, newdata=MH_dat[test,])
+
+mean_sqr_error_L <- MSE(pred, MH_dat[test, ]$dep_sev_fu)
+print(mean_sqr_error_L)
+
+mean_avg_error_L <- MAE(pred, MH_dat[test, ]$dep_sev_fu)
+print(mean_avg_error_L)
+
+svmfit_linear
+
+```
+
+
+```{r}
+coeff_l <- t(svmfit_linear$coefs) %*% svmfit_linear$SV
+
+# Compute importance (absolute values of coefficients)
+import_l <- apply(abs(coeff_l), 2, sum)
+
+# Rank variables
+ranked_var_l <- sort(import_l, decreasing = TRUE)
+
+# Print ranked variables
+print(ranked_var_l)
+```
+```{r}
+library(ggplot2)
+
+# Assume coeff_p and import_p are already computed as in your example
+coeff_l <- t(svmfit_linear$coefs) %*% svmfit_linear$SV
+
+# Compute importance (absolute values of coefficients)
+import_l <- apply(abs(coeff_l), 2, sum)
+
+# Compute the direction (sign) of the coefficients
+direction_l <- apply(coeff_l, 2, sum)
+
+# Create a data frame for plotting
+variable_importance <- data.frame(
+  Variable = names(import_l),
+  Importance = import_l,
+  Direction = direction_l
+)
+
+# Plot the variable importance and direction
+ggplot(variable_importance, aes(x = reorder(Variable, Importance), y = Importance, fill = Direction)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + # Flip coordinates to make the plot horizontal
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+  labs(title = "Variable Importance and Direction in Linear SVM",
+       x = "Variable",
+       y = "Importance",
+       fill = "Direction") +
+  theme_minimal()
+
+```
+
+### Polynomial kernel
+
+
+```{r}
+#set.seed(42)
+cost <- c(0.001, 0.01, 0.1, 1, 10)
+gamma <- c(0.001, 0.01, 0.1, 1.0, 10)
+epsilon <- c(0.001, 0.01, 0.1, 1.0)
+
+tune.out <- tune(svm, dep_sev_fu ~., data = MH_dat[train, ], kernel = "polynomial", ranges=list(cost=cost, degree=2:5))
+
+optimal_vals <- tune.out$best.parameters
+print(optimal_vals)
+param <- tune.out$best.parameters
+perf <- tune.out$performances
+param$cost <- factor(param$cost)
+error <- tune.out$performances$error
+```
+
+```{r}
+svmfit_polynomial <- svm(dep_sev_fu ~., data = MH_dat[train,], kernel ="polynomial", 
+              degree= optimal_vals$degree, 
+              cost = optimal_vals$cost)
+
+pred=predict(svmfit_polynomial, newdata=MH_dat[test,])
+
+
+mean_sqr_error_P <- MSE(pred, MH_dat[test, ]$dep_sev_fu)
+print(mean_sqr_error_P)
+
+mean_avg_error_P <- MAE(pred, MH_dat[test, ]$dep_sev_fu)
+print(mean_avg_error_P)
+
+```
+
+```{r}
+coeff_p <- t(svmfit_polynomial$coefs) %*% svmfit_polynomial$SV
+
+# Compute importance (absolute values of coefficients)
+import_p <- apply(abs(coeff_p), 2, sum)
+
+# Rank variables
+ranked_var_p <- sort(import_p, decreasing = TRUE)
+
+# Print ranked variables
+print(ranked_var_p)
+```
+```{r}
+library(ggplot2)
+
+coeff_p <- t(svmfit_polynomial$coefs) %*% svmfit_polynomial$SV
+
+import_p <- apply(abs(coeff_p), 2, sum)
+
+direction_p <- apply(coeff_p, 2, sum)
+variable_importance <- data.frame(
+  Variable = names(import_p),
+  Importance = import_p,
+  Direction = direction_p
+)
+n
+ggplot(variable_importance, aes(x = reorder(Variable, Importance), y = Importance, fill = Direction)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+  labs(title = "Variable Importance and Direction in Polynomial SVM",
+       x = "Variable",
+       y = "Importance",
+       fill = "Direction") +
+  theme_minimal()
+
+```
+
+### Radial basis kernel
+
+```{r}
+cost <- c(0.001, 0.01, 0.1, 1, 10)
+gamma <- c(0.001, 0.01, 0.1, 1.0, 10)
+epsilon <- c(0.001, 0.01, 0.1, 1.0)
+
+tune.out <- tune(svm, dep_sev_fu ~., data = MH_dat[train, ], kernel = "radial", ranges=list(cost=cost, epsilon=epsilon, gamma = gamma ))
+
+optimal_vals <- tune.out$best.parameters
+print(optimal_vals)
+param <- tune.out$best.parameters
+perf <- tune.out$performances
+param$cost <- factor(param$cost)
+error <- tune.out$performances$error
+```
+
+
+```{r}
+svmfit_radial <- svm(dep_sev_fu ~., data = MH_dat[train,], kernel ="radial", 
+              epsilon= optimal_vals$epsilon, 
+              cost = optimal_vals$cost)
+
+pred=predict(svmfit_radial, newdata=MH_dat[test,])
+
+
+mean_sqr_error_R <- MSE(pred, MH_dat[test, ]$dep_sev_fu)
+print(mean_sqr_error_R)
+
+mean_avg_error_R <- MAE(pred, MH_dat[test, ]$dep_sev_fu)
+print(mean_avg_error_R)
+
+```
+
+```{r}
+coeff_r <- t(svmfit_radial$coefs) %*% svmfit_radial$SV
+
+# Compute importance (absolute values of coefficients)
+import_r <- apply(abs(coeff_r), 2, sum)
+
+# Rank variables
+ranked_var_r <- sort(import_r, decreasing = TRUE)
+
+# Print ranked variables
+print(ranked_var_r)
+```
+```{r}
+library(ggplot2)
+
+direction_r <- apply(coeff_r, 2, sum)
+
+variable_importance <- data.frame(
+  Variable = names(import_r),
+  Importance = import_r,
+  Direction = direction_r
+)
+
+ggplot(variable_importance, aes(x = reorder(Variable, Importance), y = Importance, fill = Direction)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + # Flip coordinates to make the plot horizontal
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+  labs(title = "Variable Importance and Direction in SVM with Radial Basis Kernel",
+       x = "Variable",
+       y = "Importance",
+       fill = "Direction") +
+  theme_minimal()
+
+```
+
+## Generative Additive Models 
+
+```{r, GAMs}
+#Convert categorical variables to factors 
+MH_dat$pedigree = as.factor(MH_dat$pedigree)
+MH_dat$alcohol = as.factor(MH_dat$alcohol)
+MH_dat$Sexe = as.factor(MH_dat$Sexe)
+MH_dat$disType = as.factor(MH_dat$disType)
+MH_dat$bSocPhob = as.factor(MH_dat$bSocPhob)
+MH_dat$ADuse = as.factor(MH_dat$ADuse)
+MH_dat$PsychTreat = as.factor(MH_dat$PsychTreat)
+MH_dat$bAgo = as.factor(MH_dat$bAgo)
+MH_dat$RemDis = as.factor(MH_dat$RemDis)
+MH_dat$bTypeDep = as.factor(MH_dat$bTypeDep)
+
+table(MH_dat$disType)
+table(MH_dat$aedu)
+table(MH_dat$IDS)
+```
+
+```{r}
+gam_mod_3 <- mgcv::gam(dep_sev_fu ~ s(Age,bs="tp", k=3) + s(IDS, bs="tp",k=3) + s(BAI, bs="tp", k=3) + s(FQ, bs="tp", k=3) + s(LCImax, bs="tp", k=3) + s(AO, bs="tp",  k=5) + s(aedu, bs="tp", k=5) + disType + Sexe + pedigree + alcohol + bTypeDep + bSocPhob + bGAD + bPanic + bAgo + RemDis + sample + ADuse + PsychTreat , data = MH_dat[train,], method="REML")
+
+gam_mod_5 <- mgcv::gam(dep_sev_fu ~ s(Age, bs="tp", k=5) + s(IDS, bs="tp", k=5) + s(BAI, bs="tp", k=5) + s(FQ, k=5) + s(LCImax, bs="tp", k=5) + s(AO, bs="tp", k=5) + s(aedu, bs="tp", k=5) + disType + Sexe + pedigree + alcohol + bTypeDep + bSocPhob + bGAD + bPanic + bAgo + RemDis + sample + ADuse + PsychTreat , data = MH_dat[train,], method="REML")
+
+gam_mod_7 <- mgcv::gam(dep_sev_fu ~ s(Age, bs="tp", k=7) + s(IDS,  bs="tp", k=7) + s(BAI, bs="tp", k=7) + s(FQ,  bs="tp", k=7) + s(LCImax, k=7) + s(AO,  bs="tp", k=7) + s(aedu, k=7) + disType + Sexe + pedigree + alcohol + bTypeDep + bSocPhob + bGAD + bPanic + bAgo + RemDis + sample + ADuse + PsychTreat , data = MH_dat[train,], method="REML")
+
+predictions_3 <- predict(gam_mod_3, newdata = MH_dat[- train,])
+mse_3 <- mean((MH_dat[-train,]$dep_sev_fu - predictions_3)^2)
+mae_3 <- mean(abs(MH_dat[-train,]$dep_sev_fu - predictions_3))
+
+predictions_5 <- predict(gam_mod_5, newdata = MH_dat[- train,])
+mse_5 <- mean((MH_dat[-train,]$dep_sev_fu - predictions_5)^2)
+mae_5 <- mean(abs(MH_dat[-train,]$dep_sev_fu - predictions_5))
+
+
+predictions_7 <- predict(gam_mod_7, newdata = MH_dat[- train,])
+mse_7 <- mean((MH_dat[-train,]$dep_sev_fu - predictions_7)^2)
+mae_7 <- mean(abs(MH_dat[-train,]$dep_sev_fu - predictions_7))
+
+#MSEs
+print(mse_3)
+print(mse_5)
+print(mse_7)
+
+#MAEs
+print(mae_3)
+print(mae_5)
+print(mae_7)
+```
+
+```{r}
+
+gam_mod <- mgcv::gam(dep_sev_fu ~ s(Age) + s(IDS) + s(BAI, k=10) + s(FQ) + s(LCImax) + s(AO) + s(aedu, k=2) + disType + Sexe + pedigree + alcohol + bTypeDep + bSocPhob + bGAD + bPanic + bAgo + RemDis + sample + ADuse + PsychTreat , data = MH_dat[train,], method="REML")
+
+summary(gam_mod)
+
+```
+```{r}
+# Example table of parametric coefficients (replace with your data)
+coefficients <- data.frame(
+  Variable = c("disTypecomorbid disorder", "disTypedepressive disorder", "Sexemale", "pedigreeYes", "alcoholNo positive alcohol diagnose", "bTypeDepFirst onset MDD", "bTypeDepNo depressive disorder", "bTypeDepRecurrent MDD", "bSocPhobPositive", "bGADPositive", "bPanicPositive", "bAgoPositive", "RemDisTRUE", "samplePrimary care", "sampleSpecialised mental health care", "ADuseTRUE", "PsychTreatTRUE"),
+  Estimate = c(1.63589, 1.25524, 0.66558, 0.38753, 0.52065, 0.06667, -0.95193, -0.35319, -0.47997, 0.72677, 0.41394, -0.65701, 0.42959, 0.20071, 0.78840, -1.59538, -0.82459)
+)
+
+# Calculate importance based on absolute value of estimate
+coefficients$Importance <- abs(coefficients$Estimate)
+
+coefficients$Direction <- ifelse(coefficients$Estimate > 0, "Positive", ifelse(coefficients$Estimate < 0, "Negative", "Neutral"))
+
+# Plot variable importance and direction
+library(ggplot2)
+ggplot(coefficients, aes(x = reorder(Variable, Importance), y = Importance, fill = Direction)) +
+  geom_bar(stat = "identity")  + coord_flip() + 
+  scale_fill_manual(values = c("Positive" = "blue", "Negative" = "red", "Neutral" = "gray")) +
+  labs(title = "Variable Importance and Direction in GAM",
+       x = "Variable",
+       y = "Importance") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+## Gradient Boosting 
+```{r}
+mcr <- function(y, pred_prob){
+  if (length(pred_prob) != length(y)){
+    stop("Vectors should be the same length")
+  } else {
+    1 - sum(diag(table(y, pred_prob >= .5))) / length(pred_prob)
+  }
+}
+
+y_test <- as.numeric(MH_dat$dep_sev_fu)[test]-1
+```
+
+```{r}
+grid <- expand.grid(shrinkage = c(.1, .01, .001),
+                    n.trees = c(10, 100, 1000, 2000, 2500), 
+                    interaction.depth = 1:4,
+                    n.minobsinnode= 10)
+```
+
+
+```{r}
+set.seed(4168216)
+gbmFit <- train(dep_sev_fu ~., data = MH_dat[train, ], tuneGrid = grid, distribution="gaussian", method="gbm", trControl = trainControl(number=10L, verboseIter = TRUE)  )
+```
+```{r}
+plot(gbmFit)
+```
+
+
+
+```{r}
+gbmFit$bestTune
+```
+```{r}
+#ensure that RemDis is correctly coded 
+MH_dat$RemDis <- factor(MH_dat$RemDis)
+
+#execute best GBM
+gbmBest <- gbm(dep_sev_fu ~. , data = MH_dat[train,], distribution="gaussian", n.trees= 2500, interaction.depth = 4, shrinkage = 0.001)
+
+pred_gbm = predict(gbmBest, newdata=MH_dat[test,]) 
+
+mean_sqr_error_gbm <- MSE(pred_gam, MH_dat[test, ]$dep_sev_fu)
+print(mean_sqr_error_L)
+
+mean_avg_error_gbm <- MAE(pred_gam, MH_dat[test, ]$dep_sev_fu)
+print(mean_avg_error_L)
+
+```
+
+```{r}
+gbmImp <- varImp(gbmFit, scale = FALSE)
+gbmImp
+```
+```{r}
+plot(gbmImp, top = 20)
+```
+```{r}
+importance <- summary(gbmFit, plotit = FALSE)
+```
+
+
+```{r}
+library(gbm)
+library(pdp)
+
+plot.gbm(gbmBest, i.var=1)
+plot.gbm(gbmBest, i.var=2)
+plot.gbm(gbmBest, i.var=3)
+plot.gbm(gbmBest, i.var=4)
+plot.gbm(gbmBest, i.var=5)
+plot.gbm(gbmBest, i.var=6)
+plot.gbm(gbmBest, i.var=7)
+plot.gbm(gbmBest, i.var=8)
+plot.gbm(gbmBest, i.var=9)
+plot.gbm(gbmBest, i.var=10)
+plot.gbm(gbmBest, i.var=11)
+plot.gbm(gbmBest, i.var=12)
+plot.gbm(gbmBest, i.var=13)
+plot.gbm(gbmBest, i.var=14)
+plot.gbm(gbmBest, i.var=15)
+plot.gbm(gbmBest, i.var=16)
+plot.gbm(gbmBest, i.var=17)
+```
+## David Edgar 
+
+
+```{r}
+pat_dat <- read.table("Patient.csv", sep=",", header=TRUE, stringsAsFactors = TRUE)
+```
+
+```{r}
+
+pred_pat_dat_lin= predict(svmfit_linear, newdata=pat_dat) 
+print(pred_pat_dat_lin) 
+
+pred_pat_dat_radial = predict(svmfit_radial, newdata=pat_dat) 
+print(pred_pat_dat_radial) 
+
+pred_pat_dat_poly = predict(svmfit_polynomial, newdata=pat_dat) 
+print(pred_pat_dat_poly) 
+
+pred_pat_dat_gam = predict(gam_mod_7, newdata=pat_dat) 
+print(pred_pat_dat_gam) 
+
+pred_pat_dat_gbm = predict(gbmBest, newdata=pat_dat) 
+print(pred_pat_dat_gbm) 
+
+```
+
+## Pairwise Confidence Intervals of Methods 
+```{r}
+#ensure that RemDis is correctly coded 
+MH_dat$RemDis <- factor(MH_dat$RemDis)
+
+predictions_svmfit_linear <- predict(svmfit_linear, newdata = MH_dat[- train,])
+predictions_svmfit_polynomial <- predict(svmfit_polynomial, newdata = MH_dat[- train,])
+predictions_svmfit_radial <- predict(svmfit_radial, newdata = MH_dat[- train,])
+predictions_gam3 <- predict(gam_mod_3, newdata = MH_dat[- train,])
+predictions_gam5 <- predict(gam_mod_5, newdata = MH_dat[- train,])
+predictions_gam7 <- predict(gam_mod_7, newdata = MH_dat[- train,])
+predictions_gbm <- predict(gbmBest, newdata = MH_dat[- train,])
+
+
+
+# Define MSE function
+mse <- function(y_true, y_pred) {
+  mean((y_true - y_pred)^2)
+}
+
+# Define function to compute difference in MSE
+mse_diff <- function(data, indices, model_a, model_b) {
+  y_true <- data[indices, 1]
+  y_pred_a <- data[indices, 2]
+  y_pred_b <- data[indices, 3]
+  y_pred_c <- data[indices, 4]
+  y_pred_d <- data[indices, 5]
+  y_pred_e <- data[indices, 6]
+  y_pred_f <- data[indices, 7]
+  y_pred_g <- data[indices, 8]
+  
+  mse_a <- mse(y_true, y_pred_a)
+  mse_b <- mse(y_true, y_pred_b)
+  mse_c <- mse(y_true, y_pred_c)
+  mse_d <- mse(y_true, y_pred_d)
+  mse_e <- mse(y_true, y_pred_e)
+  mse_f <- mse(y_true, y_pred_f)
+  mse_g <- mse(y_true, y_pred_g)
+
+  
+  mse_diff <- mse_a - mse_b
+  return(mse_diff)
+}
+
+set.seed(123)  # For reproducibility
+n_models <- length(model_names)
+results_list <- list()
+ci_list <- list()
+
+for (i in 1:(n_models - 1)) {
+  for (j in (i + 1):n_models) {
+    # Create boot_fn for pairwise comparison
+    boot_fn <- function(data, indices) {
+      mse_diff(data, indices, paste("predictions_", model_names[i], sep = ""), paste("predictions_", model_names[j], sep = ""))
+    }
+    results <- boot(data, statistic = boot_fn, R = 1000)  # R is the number of bootstrap replicates
+    ci <- boot.ci(results, type = "perc")
+    results_list[[paste(model_names[i], "vs", model_names[j])]] <- results
+    ci_list[[paste(model_names[i], "vs", model_names[j])]] <- ci
+  }
+}
+
+# Print confidence intervals
+for (comparison in names(ci_list)) {
+  cat(comparison, "\n")
+  print(ci_list[[comparison]])
+  cat("\n")
+}
+
+```
+
+
+
+```{r}
+library(boot)
+
+uncertainty <- apply(svmfit_linear, 1, sd)
+
+# Or calculate entropy of probabilities
+entropy <- -apply(svm_prob, 1, function(x) sum(x * log(x)))
+
+# Alternatively, you can use other metrics to quantify uncertainty
+
+# Print uncertainty metrics
+print(uncertainty)
+print(entropy)
+```
+
