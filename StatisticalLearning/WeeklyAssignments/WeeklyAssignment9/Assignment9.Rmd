@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r, install, echo=FALSE}
+library(RDS)
+library(ggeffects)
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+library(mgcv)
+library(splines)
+```
+# Data Exploration 
+
+```{r}
+bike_data <- readRDS("bike_dat.Rdata") #read data 
+bike_data <- data.frame(bike_data)
+```
+
+
+```{r}
+str(bike_data)
+sum(is.na(bike_data)) #Check if there are empty values
+
+train <- bike_data %>% 
+              sample_n(200, replace = FALSE)
+
+```
+
+
+```{r}
+
+#set random seed 
+set.seed(4168216)
+
+# add year to the date variable 
+train$Date <- paste(train$Date,"2006", sep="-")
+```
+
+
+```{r, eval = FALSE}
+
+#problematic_values <- train$Date[is.na(train$Date)]
+#print(problematic_values)
+train$Date_col <- as.Date(train$Date, format = "%d-%b-%Y")
+
+```
+
+
+```{r, eval = FALSE}
+#Convert categorical variables into factors 
+train$month <- as.factor(train$month)
+train$rain <- as.factor(train$rain)
+train$bridge <- as.factor(train$bridge)
+#train$snow <- as.factor(train$snow)
+train$rain <- as.factor(train$rain)
+train$day <- as.factor(train$day)
+train$Date_col <- as.factor(train$Date_col)
+
+#levels = c(levels(train$snow))
+#print(levels)
+
+print(table(train$snow))
+```
+
+
+```{r, eval = FALSE}
+#train$snow <- factor(train$snow, levels = c(levels(train$snow), "check"))
+
+#create a linear model 
+#we remove snow because it has only one value no
+mod_lm <- gam(counts ~  s(Date_col, bs="re") + Day + s(High.Temp) + s(Low.Temp) + rain + snow + bridge + s(prec) + month, data = train, method = "REML")
+
+
+
+summary(mod_lm)
+
+```
+Using a regular linear model is statistically significant as it explains 92.8% of the deviance. 
+
+From the data obtained in the summary of mod_lm above we can see that the day of the week that produces the highest number of cyclists is Tuesday as it has the highest estimate at 805.72 and the month of July produces the most cyclists with an estimate of 571.87.
+
+We can see that rain and snow days both have negative estimates (at -315.71 and -1392.73) indicating that a day with rain or snow leads to a lower number of cyclists with much lower number for the latter. We can see that the effects of rain and snow on the number of cyclists are statistically significant as p-values for rainyes = 0.017 and p-values for snowyes = 0.081 are both greater than 0.001.
+
+Since the p-value of High.Temp (9.44e-06) and the p-value of precipitation (1.44x10-5) is much lower than 0.001, it indicates that there is a significant effect of high temperature and precipitation on the number of cyclists. On the other hand, the p-value of Low.Temp is 0.115 which is greater than 0.001, indicating that the effect of low temperature on cyclists is not so significant. 
+
+```{r, eval = FALSE}
+plot(mod_lm, residuals=TRUE, cex=.5, col="blue")  # Interaction plot for var1 and var2
+```
+From the spline curves above we can see that highest temperature of a day has a complex non-linear relationship with the number of cyclists as moderately high temperatures between 60 to 80 degrees Fahrenheit can actually increase the number of cyclists on the road but extremely high maximum temperatures (those beyond 88 degrees Fahrenheit) result in a decrease in the number of cyclists on the road.
+
+Furthermore, we can also investigate the effects of low temperatures on the number of cyclists. We observe that extremely low temperatures results in a decrease in the number of cyclists. As the lowest temperatures of the day increase, the number of cyclists decrease (indicating that it gets really hot).
+
+We can see that precipitation has an inverse linear relationship (indicated by the small value of edf = 1.001) with the daily count of cyclists as higher precipitation leads to much lower cyclists and vice versa.
+ 
+
